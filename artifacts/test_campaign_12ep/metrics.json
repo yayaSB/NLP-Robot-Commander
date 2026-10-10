@@ -1,0 +1,50 @@
+{
+  "accuracy": 0.74,
+  "sample_count": 50,
+  "confidence_threshold": 0.65,
+  "below_threshold_count": 28,
+  "accepted_command_count": 20,
+  "classification_report": {
+    "navigate": {
+      "precision": 0.875,
+      "recall": 0.7777777777777778,
+      "f1-score": 0.8235294117647058,
+      "support": 18.0
+    },
+    "stop": {
+      "precision": 0.625,
+      "recall": 0.5,
+      "f1-score": 0.5555555555555556,
+      "support": 10.0
+    },
+    "pick": {
+      "precision": 0.7857142857142857,
+      "recall": 1.0,
+      "f1-score": 0.88,
+      "support": 11.0
+    },
+    "report": {
+      "precision": 0.5833333333333334,
+      "recall": 0.6363636363636364,
+      "f1-score": 0.6086956521739131,
+      "support": 11.0
+    },
+    "accuracy": 0.74,
+    "macro avg": {
+      "precision": 0.7172619047619048,
+      "recall": 0.7285353535353535,
+      "f1-score": 0.7169451548735436,
+      "support": 50.0
+    },
+    "weighted avg": {
+      "precision": 0.7411904761904762,
+      "recall": 0.74,
+      "f1-score": 0.7350947428246661,
+      "support": 50.0
+    }
+  },
+  "failure_counts": {
+    "NONE": 37,
+    "WRONG_INTENT": 13
+  }
+}

@@ -1,0 +1,82 @@
+text,intent
+"Va dans la cuisine",navigate
+"Rends-toi dans le salon",navigate
+"Dirige-toi vers le bureau",navigate
+"Retourne au chargeur",navigate
+"Peux-tu aller à la cuisine ?",navigate
+"Avance jusqu'au salon",navigate
+"Navigue vers le bureau",navigate
+"Rejoins la station de recharge",navigate
+"Je veux que tu ailles dans la cuisine",navigate
+"Déplace-toi jusqu'au salon",navigate
+"Pars au bureau",navigate
+"Va te recharger à la base",navigate
+"Emmène-toi vers la cuisine",navigate
+"Fais route vers le salon",navigate
+"Positionne-toi dans le bureau",navigate
+"Reviens sur le chargeur",navigate
+"Pourrais-tu rejoindre la cuisine s'il te plaît ?",navigate
+"Le salon est ta prochaine destination",navigate
+"Mets-toi en route vers le bureau",navigate
+"Rentre à la station de charge",navigate
+"Arrête-toi",stop
+"Stop",stop
+"Ne bouge plus",stop
+"Immobilise-toi immédiatement",stop
+"Annule le déplacement",stop
+"Interromps la navigation",stop
+"Halte",stop
+"Reste où tu es",stop
+"Cesse d'avancer",stop
+"Arrête la mission en cours",stop
+"Tu peux t'arrêter maintenant",stop
+"Freine immédiatement",stop
+"Suspend ton mouvement",stop
+"Stoppe le robot",stop
+"Abandonne le trajet",stop
+"Ne continue pas vers la destination",stop
+"Mets fin à la navigation",stop
+"Arrêt d'urgence",stop
+"Garde ta position",stop
+"Interromps ton trajet tout de suite",stop
+"Prends la boîte rouge",pick
+"Ramasse le cube bleu",pick
+"Saisis la bouteille",pick
+"Attrape le petit colis",pick
+"Récupère l'objet vert",pick
+"Peux-tu prendre la boîte ?",pick
+"Soulève le cube rouge",pick
+"Prends le paquet devant toi",pick
+"Ramasse cette bouteille bleue",pick
+"Saisis l'objet posé au sol",pick
+"Attrape la boîte jaune",pick
+"Récupère le colis rouge",pick
+"Je veux que tu prennes le cube",pick
+"Prends délicatement la bouteille",pick
+"Ramasse le paquet vert",pick
+"Saisis la petite boîte bleue",pick
+"Va chercher l'objet rouge",pick
+"Soulève le colis devant le robot",pick
+"Prends ce cube jaune",pick
+"Récupère la bouteille sur le sol",pick
+"Où es-tu ?",report
+"Donne-moi ta position",report
+"Indique ta localisation actuelle",report
+"Fais un rapport de position",report
+"Dans quelle pièce te trouves-tu ?",report
+"Quelles sont tes coordonnées ?",report
+"Dis-moi où tu te situes",report
+"Signale ta position",report
+"Rapporte ton emplacement actuel",report
+"Je veux connaître ta localisation",report
+"Peux-tu me dire où tu es ?",report
+"Affiche les coordonnées du robot",report
+"Informe-moi de ta position actuelle",report
+"Localise-toi",report
+"Quel est ton emplacement ?",report
+"Envoie ton rapport de localisation",report
+"À quel endroit es-tu maintenant ?",report
+"Communique-moi ta position sur la carte",report
+"Donne tes coordonnées dans la carte",report
+"Où te trouves-tu actuellement ?",report
+

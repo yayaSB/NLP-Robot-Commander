@@ -1,0 +1,4 @@
+# Dépendances optionnelles pour l'entrée micro.
+SpeechRecognition>=3.10,<4
+PyAudio>=0.2.14,<1
+

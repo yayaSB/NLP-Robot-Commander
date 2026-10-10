@@ -1,0 +1,13 @@
+nlp_commander:
+  ros__parameters:
+    classifier_backend: transformers
+    model_path: models/distilbert-robot-commander-20ep
+    confidence_threshold: 0.65
+    allow_rule_fallback: true
+    input_topic: /nlp_command
+    status_topic: /nlp_commander/status
+    pick_topic: /nlp_commander/pick_request
+    cmd_vel_topic: /cmd_vel
+    map_frame: map
+    base_frame: base_link
+

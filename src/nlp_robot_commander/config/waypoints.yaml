@@ -1,0 +1,31 @@
+# Coordonnées d'exemple dans le repère `map`.
+# Elles doivent être recalibrées sur la carte réellement utilisée dans Gazebo.
+waypoints:
+  cuisine:
+    x: 1.25
+    y: 2.10
+    yaw: 1.57
+    aliases: [cuisine, coin cuisine]
+  salon:
+    x: -1.40
+    y: 0.80
+    yaw: 0.0
+    aliases: [salon, séjour, sejour]
+  bureau:
+    x: 2.30
+    y: -1.15
+    yaw: 3.14
+    aliases: [bureau, salle de travail]
+  chargeur:
+    x: 0.0
+    y: 0.0
+    yaw: 0.0
+    aliases: [chargeur, base, station de recharge, station de charge, dock, dock de recharge]
+
+object_aliases:
+  écarlate: rouge
+  ecarlate: rouge
+  de couleur rouge: rouge
+  de couleur verte: vert
+  de couleur bleue: bleu
+

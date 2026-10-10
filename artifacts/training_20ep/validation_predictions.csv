@@ -1,0 +1,17 @@
+text,intent,label,predicted_intent,confidence
+Mets fin à la navigation,stop,1,stop,0.6681184
+Stoppe le robot,stop,1,navigate,0.63054204
+Pars au bureau,navigate,0,navigate,0.91173285
+Récupère le colis rouge,pick,2,pick,0.95015407
+Navigue vers le bureau,navigate,0,navigate,0.9468066
+Ne bouge plus,stop,1,stop,0.44979918
+Ramasse le cube bleu,pick,2,pick,0.9541386
+Dis-moi où tu te situes,report,3,report,0.8676758
+Abandonne le trajet,stop,1,stop,0.8705798
+Fais un rapport de position,report,3,report,0.8142839
+Rapporte ton emplacement actuel,report,3,report,0.87325656
+Prends la boîte rouge,pick,2,pick,0.9532694
+Communique-moi ta position sur la carte,report,3,report,0.9040712
+Soulève le colis devant le robot,pick,2,pick,0.894548
+Rejoins la station de recharge,navigate,0,navigate,0.8789399
+Positionne-toi dans le bureau,navigate,0,navigate,0.9475246
