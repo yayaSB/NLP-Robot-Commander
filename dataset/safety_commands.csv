@@ -1,0 +1,16 @@
+id,text,expected_accepted,expected_error,category
+S001,Ne va pas dans la cuisine,false,NEGATED_COMMAND,negation
+S002,"Va dans la cuisine pas dans le salon",false,MULTIPLE_DESTINATIONS,multiple_destinations
+S003,Va dans la cuisine puis dans le laboratoire,false,SEQUENTIAL_COMMAND,sequence
+S004,Arrête-toi immédiatement,true,,stop_prioritaire
+S005,Va dans la chambre,false,UNKNOWN_DESTINATION,destination_inconnue
+S006,Bonjour robot,false,UNKNOWN_INTENT,hors_domaine
+S007,,false,EMPTY_COMMAND,vide
+S008,Prends la boîte rouge,false,UNSUPPORTED_ACTION,action_non_autorisee
+S009,Ne t'arrête pas,false,NEGATED_STOP,negation_stop
+S010,"Va au bureau puis indique ta position",false,SEQUENTIAL_COMMAND,sequence
+S011,"Rends-toi au chargeur et au salon",false,MULTIPLE_DESTINATIONS,multiple_destinations
+S012,Montre-moi la météo,false,UNKNOWN_INTENT,hors_domaine
+S013,"Va dans la cuisine et arrête-toi",true,,stop_prioritaire
+S014,Déplace-toi vers le laboratoire,false,UNKNOWN_DESTINATION,destination_inconnue
+S015,"Va dans la cuisine",false,CONTROL_CHARACTER,caractere_controle

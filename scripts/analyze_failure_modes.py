@@ -16,8 +16,16 @@ DESCRIPTIONS = {
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--predictions", type=Path, default=Path("artifacts/test_campaign/predictions.csv"))
-    parser.add_argument("--output", type=Path, default=Path("artifacts/test_campaign/failure_catalogue.md"))
+    parser.add_argument(
+        "--predictions",
+        type=Path,
+        default=Path("artifacts/test_campaign_3intents/predictions.csv"),
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("artifacts/test_campaign_3intents/failure_catalogue.md"),
+    )
     args = parser.parse_args()
     frame = pd.read_csv(args.predictions).fillna("")
     failures = frame[frame["failure_mode"] != "NONE"]

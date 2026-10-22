@@ -1,42 +1,55 @@
-# Protocole de la campagne de 50 tests
+# Protocole de test reproductible
 
-## Préparation
+## 1. Tests statiques et unitaires
 
-1. Entraîner une seule version du modèle et noter son hash Git.
-2. Ne pas intégrer les 50 phrases au jeu d'entraînement.
-3. Démarrer Gazebo, AMCL, Nav2 et `nlp_commander` avec la même carte.
-4. Vérifier séparément que chaque waypoint est atteignable.
-5. Ajouter les obstacles seulement pour les cas `obstacle_nav`.
+```bash
+python -m pytest
+python -m compileall -q scripts src tests
+```
 
-## Exécution
+Couverture fonctionnelle : normalisation, corpus, extraction, décisions, routage par mocks, chargement invalide du modèle et machine d’état d’annulation.
 
-Pour chaque ligne de `dataset/test_commands.csv` :
+## 2. Audit des données
 
-1. Publier exactement le texte indiqué.
-2. Relever `predicted_intent`, `confidence` et l'entité dans le statut.
-3. Pour `navigate`, attendre le résultat Nav2 et remplir `nav_result`.
-4. Pour `stop`, vérifier l'annulation et la publication d'une vitesse nulle.
-5. Pour `report`, comparer la pose annoncée à TF/RViz2.
-6. Ajouter une observation courte dans `notes` sans modifier l'attendu.
+```bash
+python scripts/audit_dataset.py --output artifacts/dataset_audit.json
+```
 
-## Catégories d'échec
+Le script vérifie les trois labels, l’équilibre, les doublons normalisés, les recouvrements exacts et les quasi-doublons inter-splits avec un seuil de similarité de 0,94.
 
-| Code | Critère |
-|---|---|
-| `WRONG_INTENT` | L'intention prédite diffère de l'intention attendue. |
-| `WRONG_OR_MISSING_PARAMETER` | L'intention est correcte, mais la destination ou l'objet est absent/erroné. |
-| `NAVIGATION_FAILURE` | Intention et destination correctes, mais Nav2 échoue ou la cible est inaccessible. |
+## 3. Entraînement
 
-Une destination volontairement inconnue est un succès de sécurité lorsque le système prédit `navigate` mais refuse d'envoyer un but.
+```bash
+python scripts/train_intent_classifier.py \
+  --output-dir models/distilbert-robot-commander-3intents \
+  --artifacts-dir artifacts/training_3intents \
+  --epochs 12 --batch-size 8 --seed 42
+```
 
-## Métriques à rapporter
+Le meilleur checkpoint est sélectionné sur le F1 macro de validation. Les états d’optimiseur ne sont pas sauvegardés afin de limiter l’espace disque.
 
-- Accuracy globale sur 50 phrases.
-- Précision, rappel et F1 par intention, plus moyennes macro.
-- Exactitude d'extraction sur les commandes `navigate` et `pick`.
-- Taux de succès Nav2 sur les destinations valides.
-- Nombre de refus sûrs pour les destinations inconnues.
-- Distribution des trois modes d'échec.
+## 4. Test indépendant
 
-La matrice de confusion et le CSV brut doivent être conservés sous `artifacts/test_campaign/` avec le hash du commit et la date d'exécution.
+```bash
+python scripts/evaluate_intent_classifier.py \
+  --model models/distilbert-robot-commander-3intents \
+  --output-dir artifacts/test_campaign_3intents
+```
 
+Mesures : accuracy, précision/rappel/F1 par classe, F1 macro, matrice de confusion, confiance, entité extraite et acceptation finale.
+
+## 5. Sûreté
+
+```bash
+python scripts/evaluate_safety_commands.py \
+  --model models/distilbert-robot-commander-3intents \
+  --output-dir artifacts/safety_campaign_transformers
+```
+
+Les cas incluent commande vide, négation, arrêt nié, destination inconnue, destinations multiples, séquence, action hors périmètre, texte hors domaine et caractère de contrôle.
+
+## 6. ROS 2 / Gazebo
+
+Exécuter la checklist de démonstration et enregistrer les événements JSON. Les critères minimaux sont : but Nav2 accepté, arrivée ou échec explicite, annulation réellement confirmée, arrêt sans but actif, TF fraîche, TF absente/périmée et refus sans émission de but.
+
+Cette dernière section n’a pas été exécutée sur la machine Windows d’audit.

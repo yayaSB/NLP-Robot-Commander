@@ -24,6 +24,7 @@ def main() -> None:
     parser.add_argument("--model", type=Path)
     parser.add_argument("--waypoints", type=Path, default=Path("src/nlp_robot_commander/config/waypoints.yaml"))
     parser.add_argument("--threshold", type=float, default=0.65)
+    parser.add_argument("--ambiguity-margin", type=float, default=0.10)
     args = parser.parse_args()
     classifier = (
         TransformersIntentClassifier(args.model)
@@ -34,6 +35,7 @@ def main() -> None:
         classifier,
         EntityExtractor.from_yaml(args.waypoints),
         args.threshold,
+        args.ambiguity_margin,
     )
     print("Mode DistilBERT" if args.model else "Mode lexical de secours")
     print("Saisissez `quit` pour quitter.")

@@ -18,6 +18,7 @@ def generate_launch_description() -> LaunchDescription:
             SetEnvironmentVariable("TURTLEBOT3_MODEL", "burger"),
             DeclareLaunchArgument("map", default_value=default_map),
             DeclareLaunchArgument("use_sim_time", default_value="true"),
+            DeclareLaunchArgument("model_path", default_value=""),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     os.path.join(turtlebot_gazebo, "launch", "turtlebot3_world.launch.py")
@@ -37,7 +38,8 @@ def generate_launch_description() -> LaunchDescription:
                     os.path.join(commander, "launch", "nlp_commander.launch.py")
                 ),
                 launch_arguments={
-                    "use_sim_time": LaunchConfiguration("use_sim_time")
+                    "use_sim_time": LaunchConfiguration("use_sim_time"),
+                    "model_path": LaunchConfiguration("model_path"),
                 }.items(),
             ),
         ]

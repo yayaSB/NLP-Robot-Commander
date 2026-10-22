@@ -1,82 +1,163 @@
-text,intent
-"Va dans la cuisine",navigate
-"Rends-toi dans le salon",navigate
-"Dirige-toi vers le bureau",navigate
-"Retourne au chargeur",navigate
-"Peux-tu aller à la cuisine ?",navigate
-"Avance jusqu'au salon",navigate
-"Navigue vers le bureau",navigate
-"Rejoins la station de recharge",navigate
-"Je veux que tu ailles dans la cuisine",navigate
-"Déplace-toi jusqu'au salon",navigate
-"Pars au bureau",navigate
-"Va te recharger à la base",navigate
-"Emmène-toi vers la cuisine",navigate
-"Fais route vers le salon",navigate
-"Positionne-toi dans le bureau",navigate
-"Reviens sur le chargeur",navigate
-"Pourrais-tu rejoindre la cuisine s'il te plaît ?",navigate
-"Le salon est ta prochaine destination",navigate
-"Mets-toi en route vers le bureau",navigate
-"Rentre à la station de charge",navigate
-"Arrête-toi",stop
-"Stop",stop
-"Ne bouge plus",stop
-"Immobilise-toi immédiatement",stop
-"Annule le déplacement",stop
-"Interromps la navigation",stop
-"Halte",stop
-"Reste où tu es",stop
-"Cesse d'avancer",stop
-"Arrête la mission en cours",stop
-"Tu peux t'arrêter maintenant",stop
-"Freine immédiatement",stop
-"Suspend ton mouvement",stop
-"Stoppe le robot",stop
-"Abandonne le trajet",stop
-"Ne continue pas vers la destination",stop
-"Mets fin à la navigation",stop
-"Arrêt d'urgence",stop
-"Garde ta position",stop
-"Interromps ton trajet tout de suite",stop
-"Prends la boîte rouge",pick
-"Ramasse le cube bleu",pick
-"Saisis la bouteille",pick
-"Attrape le petit colis",pick
-"Récupère l'objet vert",pick
-"Peux-tu prendre la boîte ?",pick
-"Soulève le cube rouge",pick
-"Prends le paquet devant toi",pick
-"Ramasse cette bouteille bleue",pick
-"Saisis l'objet posé au sol",pick
-"Attrape la boîte jaune",pick
-"Récupère le colis rouge",pick
-"Je veux que tu prennes le cube",pick
-"Prends délicatement la bouteille",pick
-"Ramasse le paquet vert",pick
-"Saisis la petite boîte bleue",pick
-"Va chercher l'objet rouge",pick
-"Soulève le colis devant le robot",pick
-"Prends ce cube jaune",pick
-"Récupère la bouteille sur le sol",pick
-"Où es-tu ?",report
-"Donne-moi ta position",report
-"Indique ta localisation actuelle",report
-"Fais un rapport de position",report
-"Dans quelle pièce te trouves-tu ?",report
-"Quelles sont tes coordonnées ?",report
-"Dis-moi où tu te situes",report
-"Signale ta position",report
-"Rapporte ton emplacement actuel",report
-"Je veux connaître ta localisation",report
-"Peux-tu me dire où tu es ?",report
-"Affiche les coordonnées du robot",report
-"Informe-moi de ta position actuelle",report
-"Localise-toi",report
-"Quel est ton emplacement ?",report
-"Envoie ton rapport de localisation",report
-"À quel endroit es-tu maintenant ?",report
-"Communique-moi ta position sur la carte",report
-"Donne tes coordonnées dans la carte",report
-"Où te trouves-tu actuellement ?",report
-
+text,intent,split
+Rends-toi dans la cuisine,navigate,train
+Va au salon,navigate,train
+Rejoins le bureau,navigate,train
+Retourne à la base,navigate,train
+Dirige-toi vers le coin cuisine,navigate,train
+Avance jusqu'au séjour,navigate,train
+Navigue vers la salle de travail,navigate,train
+Reviens à la station de recharge,navigate,train
+Mets-toi en route vers la cuisine,navigate,train
+Peux-tu aller au salon,navigate,train
+Je voudrais que tu rejoignes le bureau,navigate,train
+Fais route vers le chargeur,navigate,train
+Conduis le robot jusqu'à la cuisine,navigate,train
+Déplace-toi vers le salon,navigate,train
+Suis la direction du bureau,navigate,train
+Retourne au dock de recharge,navigate,train
+Va te placer dans la cuisine,navigate,train
+Rejoins-moi au salon,navigate,train
+Roule jusqu'au bureau,navigate,train
+Gagne la station de charge,navigate,train
+Direction la cuisine,navigate,train
+Pars vers le séjour,navigate,train
+Atteins le bureau,navigate,train
+Rentre à la base,navigate,train
+Pourrais-tu te rendre au coin cuisine,navigate,validation
+Le prochain objectif est le salon,navigate,validation
+Je te demande de rejoindre la salle de travail,navigate,validation
+Retour au chargeur s'il te plaît,navigate,validation
+Programme un trajet vers la cuisine,navigate,validation
+Déplace le robot jusqu'au séjour,navigate,validation
+Arrête-toi immédiatement,stop,train
+Stoppe le déplacement,stop,train
+Halte au mouvement,stop,train
+Immobilise-toi,stop,train
+Annule le trajet en cours,stop,train
+Interromps la navigation,stop,train
+Cesse d'avancer,stop,train
+Ne bouge plus,stop,train
+N'avance plus,stop,train
+Freine maintenant,stop,train
+Garde ta position,stop,train
+Annulation de la mission,stop,train
+Je veux que tu t'arrêtes,stop,train
+Mets fin au déplacement,stop,train
+Arrêt d'urgence,stop,train
+Coupe la navigation actuelle,stop,train
+Suspend le trajet,stop,train
+Reste exactement ici,stop,train
+Il faut interrompre le mouvement,stop,train
+Stop robot,stop,train
+Abandonne cet objectif,stop,train
+Fige ta position,stop,train
+Annule la destination,stop,train
+Termine le déplacement maintenant,stop,train
+Peux-tu stopper la navigation,stop,validation
+Je demande un arrêt immédiat,stop,validation
+Il faut rester sur place,stop,validation
+Annule sans délai le but courant,stop,validation
+Immobilisation du robot maintenant,stop,validation
+Interruption du trajet en cours,stop,validation
+Où te trouves-tu,report,train
+Quelle est ta position,report,train
+Donne-moi tes coordonnées,report,train
+Indique ta localisation,report,train
+Dans quelle pièce es-tu,report,train
+Rapporte ta pose actuelle,report,train
+Affiche ton emplacement,report,train
+Peux-tu me dire où tu es,report,train
+Je souhaite connaître ta position,report,train
+Localise-toi,report,train
+Fournis ta position dans la carte,report,train
+Quel est ton x et ton y,report,train
+Montre ta pose,report,train
+Où est situé le robot,report,train
+Donne ton emplacement présent,report,train
+Quelle est ta localisation courante,report,train
+Rapporte les coordonnées du robot,report,train
+Dis-moi dans quel repère tu te situes,report,train
+Je veux connaître ta pose exacte,report,train
+Communique ta position actuelle,report,train
+À quel endroit es-tu maintenant,report,train
+Retourne-moi ta localisation,report,train
+Informe-moi de ta pose,report,train
+Donne la position mesurée par le robot,report,train
+Pourrais-tu afficher tes coordonnées actuelles,report,validation
+Je demande un rapport de localisation,report,validation
+Où le robot se situe-t-il précisément,report,validation
+Quelle pose est mesurée dans la carte,report,validation
+Communique ton emplacement sans te déplacer,report,validation
+Indique les coordonnées x y et l'orientation,report,validation
+Le but de déplacement est la cuisine,navigate,train
+Choisis le salon comme prochain objectif,navigate,train
+Fixe le bureau comme cible de navigation,navigate,train
+Démarre un parcours en direction de la base,navigate,train
+Le coin cuisine sera le point d'arrivée,navigate,train
+Programme Nav2 pour atteindre le séjour,navigate,train
+Envoie le mobile à la salle de travail,navigate,train
+La station de recharge est la cible suivante,navigate,train
+Définis la cuisine comme destination,navigate,train
+Lance un trajet qui se termine au salon,navigate,train
+Ordonne un mouvement vers le bureau,navigate,train
+Le robot doit retourner au dock,navigate,train
+Conduis la plateforme dans la cuisine,navigate,train
+Fais avancer le robot vers le séjour,navigate,train
+Sélectionne la salle de travail comme but,navigate,train
+Débute la navigation vers le chargeur,navigate,train
+Je choisis le coin cuisine comme arrivée,navigate,train
+Le prochain trajet mène au salon,navigate,train
+La destination souhaitée est le bureau,navigate,validation
+Utilise Nav2 pour retourner à la station de charge,navigate,validation
+Je désigne la cuisine comme prochain but,navigate,validation
+Le parcours demandé doit finir au séjour,navigate,validation
+Fais rejoindre le bureau par le robot,navigate,validation
+Crée un objectif de pose sur la base,navigate,validation
+Tu dois cesser le mouvement maintenant,stop,train
+Je t'ordonne de t'arrêter ici,stop,train
+Ne poursuis plus cette route,stop,train
+Bloque le déplacement du robot,stop,train
+Révoque l'objectif Nav2 en cours,stop,train
+Demande l'annulation du but actif,stop,train
+La plateforme doit rester sur place,stop,train
+Déclenche la procédure d'arrêt,stop,train
+Termine immédiatement le parcours,stop,train
+Le mouvement doit être coupé,stop,train
+Interrompez toute progression,stop,train
+Je veux une immobilisation complète,stop,train
+Arrête la base mobile sans délai,stop,train
+Le trajet actuel doit être abandonné,stop,train
+Ordonne au robot de ne plus continuer,stop,train
+Stoppez le but de navigation,stop,train
+Reste immobile à cet endroit,stop,train
+Mets un terme à la mission de déplacement,stop,train
+Je souhaite interrompre toute avance,stop,validation
+Le robot doit s'arrêter à cet instant,stop,validation
+Annulation requise pour le but actuel,stop,validation
+Ne continue pas ce parcours,stop,validation
+Il faut couper le déplacement tout de suite,stop,validation
+Maintiens la plateforme immobile,stop,validation
+Quel emplacement est fourni par TF,report,train
+Envoie les données de position du robot,report,train
+Fournis le relevé de localisation courant,report,train
+Quel point de la carte occupes-tu,report,train
+Retourne la transformation map vers base_link,report,train
+Expose les coordonnées mesurées par TF,report,train
+Dans quel secteur le mobile se trouve-t-il,report,train
+Produis un compte rendu de pose,report,train
+Donne x y et l'angle actuel,report,train
+Affiche la transformation de localisation,report,train
+Je consulte l'endroit où se trouve la plateforme,report,train
+Transmets les valeurs de ta pose courante,report,train
+Quelle position lit le système de repères,report,train
+Indique le point occupé sur la carte,report,train
+Où se situe précisément base_link,report,train
+Communique le relevé de coordonnées,report,train
+Je demande les informations de localisation,report,train
+Rapporte la transformation courante du robot,report,train
+Quel emplacement est actuellement mesuré,report,validation
+Envoie-moi un rapport avec x y et yaw,report,validation
+Quelle localisation fournit la transformation TF,report,validation
+Montre la pose réelle de la base mobile,report,validation
+J'ai besoin des coordonnées présentes du robot,report,validation
+Retourne la position observée dans map,report,validation

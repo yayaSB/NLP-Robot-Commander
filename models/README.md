@@ -1,13 +1,14 @@
-# Checkpoint sélectionné
+# Checkpoint local
 
-Le checkpoint local sélectionné est `models/distilbert-robot-commander-20ep/`.
+Le checkpoint attendu est `models/distilbert-robot-commander-3intents/`.
 
 - Base : `distilbert-base-multilingual-cased`
+- Labels : `navigate`, `stop`, `report`
 - Graine : 42
-- Époques : 20
+- Époques maximales : 12
 - Batch : 8
 - Learning rate : 2e-5
-- Validation : accuracy 93,75 %, F1 macro 93,65 % (16 exemples)
-- Test inédit : accuracy 78,00 %, F1 macro 76,56 % (50 exemples)
+- Validation mesurée : accuracy 97,22 %, F1 macro 97,22 % sur 36 phrases
+- Test indépendant mesuré : accuracy et F1 macro 100 % sur 45 phrases
 
-Les poids sont volontairement ignorés par Git en raison de leur taille. Ils se recréent avec la commande d'entraînement du `README.md`. Pour les partager, utilisez Git LFS ou une release GitHub et conservez `config.json`, les fichiers du tokenizer et `model.safetensors` ensemble.
+Les poids sont ignorés par Git à cause de leur taille. Recréez-les avec la commande du README principal. Conservez ensemble `config.json`, les fichiers du tokenizer et `model.safetensors`.

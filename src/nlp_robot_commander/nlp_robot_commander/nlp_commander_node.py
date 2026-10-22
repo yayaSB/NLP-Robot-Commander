@@ -3,52 +3,73 @@ import math
 from pathlib import Path
 
 import rclpy
+from action_msgs.msg import GoalStatus
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped, Twist
-from nav2_simple_commander.robot_navigator import BasicNavigator
+from nav2_msgs.action import NavigateToPose
+from rclpy.action import ActionClient
+from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.time import Time
 from std_msgs.msg import String
 from tf2_ros import Buffer, TransformException, TransformListener
 
 from .command_processor import CommandProcessor
+from .command_router import CommandRouter
 from .entity_extractor import EntityExtractor
-from .intent_classifier import RuleBasedIntentClassifier, TransformersIntentClassifier
+from .intent_classifier import (
+    ModelLoadError,
+    RuleBasedIntentClassifier,
+    TransformersIntentClassifier,
+)
+from .navigation_state import NavigationPhase, NavigationStateMachine, StopState
 
 
 class NlpCommanderNode(Node):
+    """Adaptateur ROS 2 entre une commande validée et Nav2/TF."""
+
     def __init__(self) -> None:
         super().__init__("nlp_commander")
         self._declare_parameters()
+        self._validate_parameters()
 
-        waypoints_file = self.get_parameter("waypoints_file").value
-        self.extractor = EntityExtractor.from_yaml(waypoints_file)
-        classifier = self._build_classifier()
+        self.extractor = EntityExtractor.from_yaml(
+            self.get_parameter("waypoints_file").value
+        )
         self.processor = CommandProcessor(
-            classifier,
+            self._build_classifier(),
             self.extractor,
             float(self.get_parameter("confidence_threshold").value),
+            float(self.get_parameter("ambiguity_margin").value),
+            int(self.get_parameter("max_command_chars").value),
         )
+        self.router = CommandRouter(self)
+        self.navigation = NavigationStateMachine()
+        self.goal_handle = None
+        self.cancel_deadline_ns: int | None = None
 
-        self.navigator = BasicNavigator()
+        self.action_client = ActionClient(
+            self,
+            NavigateToPose,
+            self.get_parameter("navigate_action").value,
+        )
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.status_publisher = self.create_publisher(
             String, self.get_parameter("status_topic").value, 10
         )
-        self.pick_publisher = self.create_publisher(
-            String, self.get_parameter("pick_topic").value, 10
-        )
-        self.velocity_publisher = self.create_publisher(
-            Twist, self.get_parameter("cmd_vel_topic").value, 10
-        )
+        self.velocity_publisher = None
+        if self.get_parameter("publish_zero_velocity_on_stop").value:
+            self.velocity_publisher = self.create_publisher(
+                Twist, self.get_parameter("cmd_vel_topic").value, 10
+            )
         self.command_subscription = self.create_subscription(
             String,
             self.get_parameter("input_topic").value,
             self._on_command,
             10,
         )
-        self.navigation_active = False
-        self.navigation_timer = self.create_timer(0.5, self._monitor_navigation)
+        self.watchdog_timer = self.create_timer(0.1, self._check_cancel_timeout)
         self.get_logger().info("NLP Robot Commander prêt à recevoir des commandes.")
 
     def _declare_parameters(self) -> None:
@@ -58,40 +79,67 @@ class NlpCommanderNode(Node):
             / "waypoints.yaml"
         )
         self.declare_parameter("classifier_backend", "transformers")
-        self.declare_parameter("model_path", "models/distilbert-robot-commander")
+        self.declare_parameter("model_path", "")
         self.declare_parameter("waypoints_file", str(default_config))
         self.declare_parameter("confidence_threshold", 0.65)
-        self.declare_parameter("allow_rule_fallback", True)
+        self.declare_parameter("ambiguity_margin", 0.10)
+        self.declare_parameter("max_command_chars", 240)
+        self.declare_parameter("allow_rule_fallback", False)
         self.declare_parameter("input_topic", "/nlp_command")
         self.declare_parameter("status_topic", "/nlp_commander/status")
-        self.declare_parameter("pick_topic", "/nlp_commander/pick_request")
+        self.declare_parameter("navigate_action", "/navigate_to_pose")
+        self.declare_parameter("nav_server_timeout_sec", 3.0)
+        self.declare_parameter("cancel_timeout_sec", 3.0)
+        self.declare_parameter("tf_timeout_sec", 0.5)
+        self.declare_parameter("max_tf_age_sec", 1.0)
+        self.declare_parameter("publish_zero_velocity_on_stop", False)
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
         self.declare_parameter("map_frame", "map")
         self.declare_parameter("base_frame", "base_link")
 
+    def _validate_parameters(self) -> None:
+        for name in (
+            "nav_server_timeout_sec",
+            "cancel_timeout_sec",
+            "tf_timeout_sec",
+            "max_tf_age_sec",
+        ):
+            if float(self.get_parameter(name).value) <= 0:
+                raise ValueError(f"{name} doit être strictement positif.")
+
     def _build_classifier(self):
-        backend = str(self.get_parameter("classifier_backend").value).lower()
+        backend = str(self.get_parameter("classifier_backend").value).casefold()
         if backend == "rules":
-            self.get_logger().warning("Classifieur lexical actif (mode secours).")
+            self.get_logger().warning("Classifieur lexical explicitement activé.")
             return RuleBasedIntentClassifier()
         if backend != "transformers":
             raise ValueError(f"Backend inconnu: {backend}")
 
-        model_path = self.get_parameter("model_path").value
+        model_path = str(self.get_parameter("model_path").value).strip()
+        if not model_path:
+            raise ValueError("model_path absolu requis pour le backend transformers.")
+        resolved_model_path = Path(model_path).expanduser()
+        if not resolved_model_path.is_absolute():
+            raise ValueError("model_path doit être un chemin absolu.")
         try:
-            classifier = TransformersIntentClassifier(model_path)
-            self.get_logger().info(f"Checkpoint DistilBERT chargé: {model_path}")
-            return classifier
-        except Exception as exc:
+            classifier = TransformersIntentClassifier(resolved_model_path)
+        except ModelLoadError as exc:
             if not self.get_parameter("allow_rule_fallback").value:
                 raise
-            self.get_logger().warning(
-                f"Checkpoint indisponible ({exc}); activation du mode lexical de secours."
+            self.get_logger().error(
+                f"Checkpoint indisponible ({exc}); mode lexical explicitement autorisé."
             )
             return RuleBasedIntentClassifier()
+        self.get_logger().info(f"Checkpoint DistilBERT chargé: {resolved_model_path}")
+        return classifier
 
     def _on_command(self, message: String) -> None:
-        decision = self.processor.process(message.data)
+        try:
+            decision = self.processor.process(message.data)
+        except Exception as exc:
+            self._publish_status("command_error", error=str(exc))
+            self.get_logger().error(f"Échec du traitement de la commande: {exc}")
+            return
         self._publish_status(
             "command_parsed",
             text=message.data,
@@ -99,71 +147,218 @@ class NlpCommanderNode(Node):
             intent=decision.intent,
             confidence=round(decision.confidence, 4),
             destination=decision.destination,
-            object=decision.object_name,
             error_code=decision.error_code,
             message=decision.message,
         )
-        if not decision.accepted:
+        try:
+            routed = self.router.route(decision)
+        except Exception as exc:
+            self._publish_status("execution_error", error=str(exc))
+            self.get_logger().error(f"Échec du routage de la commande: {exc}")
+            return
+        if not routed:
             self.get_logger().warning(f"Commande refusée: {decision.message}")
+
+    def navigate(self, destination: str) -> None:
+        if self.navigation.phase != NavigationPhase.IDLE:
+            self._publish_status(
+                "navigation_rejected",
+                reason="navigation_busy",
+                phase=self.navigation.phase.value,
+            )
+            return
+        timeout = float(self.get_parameter("nav_server_timeout_sec").value)
+        try:
+            server_available = self.action_client.wait_for_server(timeout_sec=timeout)
+        except Exception as exc:
+            self._publish_status(
+                "navigation_rejected", reason="action_server_error", error=str(exc)
+            )
+            return
+        if not server_available:
+            self._publish_status("navigation_rejected", reason="action_server_unavailable")
             return
 
-        if decision.intent == "navigate":
-            self._navigate(decision.destination)
-        elif decision.intent == "stop":
-            self._stop()
-        elif decision.intent == "pick":
-            self._request_pick(decision.object_name, message.data)
-        elif decision.intent == "report":
-            self._report_position()
-
-    def _navigate(self, destination: str) -> None:
         waypoint = self.extractor.waypoint(destination)
-        goal = PoseStamped()
-        goal.header.frame_id = self.get_parameter("map_frame").value
-        goal.header.stamp = self.get_clock().now().to_msg()
-        goal.pose.position.x = float(waypoint["x"])
-        goal.pose.position.y = float(waypoint["y"])
-        yaw = float(waypoint.get("yaw", 0.0))
-        goal.pose.orientation.z = math.sin(yaw / 2.0)
-        goal.pose.orientation.w = math.cos(yaw / 2.0)
-        self.navigator.goToPose(goal)
-        self.navigation_active = True
+        pose = PoseStamped()
+        pose.header.frame_id = self.get_parameter("map_frame").value
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = float(waypoint["x"])
+        pose.pose.position.y = float(waypoint["y"])
+        yaw = float(waypoint["yaw"])
+        pose.pose.orientation.z = math.sin(yaw / 2.0)
+        pose.pose.orientation.w = math.cos(yaw / 2.0)
+
+        goal = NavigateToPose.Goal()
+        goal.pose = pose
+        self.navigation.request_goal(destination)
+        try:
+            future = self.action_client.send_goal_async(goal)
+        except Exception as exc:
+            self.navigation.reset()
+            self._publish_status(
+                "navigation_rejected", reason="goal_send_error", error=str(exc)
+            )
+            return
+        future.add_done_callback(self._goal_response_callback)
         self._publish_status(
-            "navigation_started",
+            "navigation_requested",
             destination=destination,
-            x=goal.pose.position.x,
-            y=goal.pose.position.y,
+            frame=pose.header.frame_id,
+            x=pose.pose.position.x,
+            y=pose.pose.position.y,
             yaw=yaw,
         )
 
-    def _stop(self) -> None:
-        self.navigator.cancelTask()
-        self.velocity_publisher.publish(Twist())
-        self.navigation_active = False
-        self._publish_status("navigation_cancelled", zero_velocity_sent=True)
+    def _goal_response_callback(self, future) -> None:
+        stop_was_requested = self.navigation.stop_requested
+        try:
+            goal_handle = future.result()
+            accepted = bool(goal_handle and goal_handle.accepted)
+            cancel_immediately = self.navigation.goal_response(accepted)
+        except Exception as exc:
+            self.navigation.reset()
+            self._publish_status("navigation_rejected", reason="goal_error", error=str(exc))
+            if stop_was_requested:
+                self._publish_status("stop_unconfirmed", reason="goal_response_error")
+            return
+        if not accepted:
+            self._publish_status("navigation_rejected", reason="goal_rejected_by_nav2")
+            return
 
-    def _request_pick(self, object_name: str, original_text: str) -> None:
-        request = String()
-        request.data = json.dumps(
-            {"object": object_name, "command": original_text}, ensure_ascii=False
-        )
-        self.pick_publisher.publish(request)
+        self.goal_handle = goal_handle
+        result_future = goal_handle.get_result_async()
+        result_future.add_done_callback(self._navigation_result_callback)
         self._publish_status(
-            "pick_requested",
-            object=object_name,
-            note="Requête publiée; un manipulateur doit s'abonner au topic pick.",
+            "navigation_started", destination=self.navigation.destination
         )
+        if cancel_immediately:
+            self._send_cancel_request()
 
-    def _report_position(self) -> None:
+    def stop(self) -> None:
+        self._publish_status("stop_received", phase=self.navigation.phase.value)
+        outcome = self.navigation.request_stop()
+        if self.velocity_publisher is not None:
+            self.velocity_publisher.publish(Twist())
+            self._publish_status(
+                "zero_velocity_sent",
+                note="Mesure complémentaire; ne confirme pas l'annulation Nav2.",
+            )
+        if outcome.state == StopState.CONFIRMED:
+            self._publish_status("stop_confirmed", reason=outcome.reason)
+        elif outcome.reason == "goal_response_pending":
+            timeout = float(self.get_parameter("cancel_timeout_sec").value)
+            self.cancel_deadline_ns = self.get_clock().now().nanoseconds + int(
+                timeout * 1e9
+            )
+            self._publish_status("cancellation_pending", reason=outcome.reason)
+        else:
+            self._send_cancel_request()
+
+    def _send_cancel_request(self) -> None:
+        if self.goal_handle is None:
+            self._publish_status("cancellation_pending", reason="goal_handle_pending")
+            return
+        timeout = float(self.get_parameter("cancel_timeout_sec").value)
+        self.cancel_deadline_ns = self.get_clock().now().nanoseconds + int(timeout * 1e9)
+        future = self.goal_handle.cancel_goal_async()
+        future.add_done_callback(self._cancel_response_callback)
+        self._publish_status("cancellation_requested", timeout_sec=timeout)
+
+    def _cancel_response_callback(self, future) -> None:
+        try:
+            response = future.result()
+            accepted = bool(response and response.goals_canceling)
+            outcome = self.navigation.cancellation_response(accepted)
+        except Exception as exc:
+            self.cancel_deadline_ns = None
+            if self.navigation.phase == NavigationPhase.CANCEL_PENDING:
+                self.navigation.cancellation_response(False)
+            self._publish_status("stop_unconfirmed", reason="cancel_error", error=str(exc))
+            return
+        if not accepted:
+            self.cancel_deadline_ns = None
+            self._publish_status("stop_unconfirmed", reason=outcome.reason)
+            return
+        self._publish_status("cancellation_accepted", reason=outcome.reason)
+
+    def _check_cancel_timeout(self) -> None:
+        if self.cancel_deadline_ns is None:
+            return
+        if self.get_clock().now().nanoseconds <= self.cancel_deadline_ns:
+            return
+        self.cancel_deadline_ns = None
+        if (
+            self.navigation.phase == NavigationPhase.GOAL_PENDING
+            and self.navigation.stop_requested
+        ):
+            self._publish_status("stop_unconfirmed", reason="goal_response_timeout")
+            return
+        if self.navigation.phase == NavigationPhase.CANCEL_PENDING:
+            outcome = self.navigation.cancellation_timeout()
+            self._publish_status("stop_unconfirmed", reason=outcome.reason)
+
+    def _navigation_result_callback(self, future) -> None:
+        self.cancel_deadline_ns = None
+        try:
+            wrapped = future.result()
+            status = wrapped.status
+        except Exception as exc:
+            outcome = self.navigation.complete("result_error")
+            self.goal_handle = None
+            self._publish_status("navigation_failed", reason="result_error", error=str(exc))
+            if outcome:
+                self._publish_status("stop_unconfirmed", reason=outcome.reason)
+            return
+
+        result_name = {
+            GoalStatus.STATUS_SUCCEEDED: "succeeded",
+            GoalStatus.STATUS_CANCELED: "canceled",
+            GoalStatus.STATUS_ABORTED: "aborted",
+        }.get(status, f"status_{status}")
+        destination = self.navigation.destination
+        outcome = self.navigation.complete(result_name)
+        self.goal_handle = None
+        event = "navigation_succeeded" if result_name == "succeeded" else "navigation_finished"
+        self._publish_status(event, result=result_name, destination=destination)
+        if outcome:
+            stop_event = (
+                "stop_confirmed"
+                if outcome.state == StopState.CONFIRMED
+                else "stop_unconfirmed"
+            )
+            self._publish_status(stop_event, reason=outcome.reason)
+
+    def report(self) -> None:
         map_frame = self.get_parameter("map_frame").value
         base_frame = self.get_parameter("base_frame").value
+        timeout = Duration(seconds=float(self.get_parameter("tf_timeout_sec").value))
         try:
             transform = self.tf_buffer.lookup_transform(
-                map_frame, base_frame, rclpy.time.Time()
+                map_frame, base_frame, Time(), timeout=timeout
             )
         except TransformException as exc:
-            self._publish_status("position_failed", error=str(exc))
+            self._publish_status(
+                "position_unavailable",
+                map_frame=map_frame,
+                base_frame=base_frame,
+                navigation_phase=self.navigation.phase.value,
+                error=str(exc),
+            )
             return
+
+        stamp_ns = Time.from_msg(transform.header.stamp).nanoseconds
+        age_sec = (self.get_clock().now().nanoseconds - stamp_ns) / 1e9
+        max_age = float(self.get_parameter("max_tf_age_sec").value)
+        if stamp_ns <= 0 or age_sec < 0 or age_sec > max_age:
+            self._publish_status(
+                "position_stale",
+                age_sec=round(age_sec, 3),
+                max_age_sec=max_age,
+                navigation_phase=self.navigation.phase.value,
+            )
+            return
+
         translation = transform.transform.translation
         rotation = transform.transform.rotation
         yaw = math.atan2(
@@ -176,14 +371,9 @@ class NlpCommanderNode(Node):
             x=round(translation.x, 3),
             y=round(translation.y, 3),
             yaw=round(yaw, 3),
+            age_sec=round(age_sec, 3),
+            navigation_phase=self.navigation.phase.value,
         )
-
-    def _monitor_navigation(self) -> None:
-        if not self.navigation_active or not self.navigator.isTaskComplete():
-            return
-        self.navigation_active = False
-        result = self.navigator.getResult()
-        self._publish_status("navigation_finished", result=str(result))
 
     def _publish_status(self, event: str, **payload) -> None:
         message = String()
@@ -194,15 +384,18 @@ class NlpCommanderNode(Node):
 
 def main(args=None) -> None:
     rclpy.init(args=args)
-    node = NlpCommanderNode()
+    node = None
     try:
+        node = NlpCommanderNode()
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     finally:
-        node.navigator.destroy_node()
-        node.destroy_node()
-        rclpy.shutdown()
+        if node is not None:
+            node.action_client.destroy()
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

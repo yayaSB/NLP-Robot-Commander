@@ -1,0 +1,16 @@
+id,text,expected_accepted,expected_error,category,accepted,intent,confidence,destination,error_code,message,passed
+S001,Ne va pas dans la cuisine,false,NEGATED_COMMAND,negation,False,navigate,1.0,,NEGATED_COMMAND,La navigation niée a été refusée.,True
+S002,Va dans la cuisine pas dans le salon,false,MULTIPLE_DESTINATIONS,multiple_destinations,False,navigate,1.0,,MULTIPLE_DESTINATIONS,Plusieurs destinations ont été détectées; commande refusée.,True
+S003,Va dans la cuisine puis dans le laboratoire,false,SEQUENTIAL_COMMAND,sequence,False,navigate,1.0,,SEQUENTIAL_COMMAND,Les commandes séquentielles ne sont pas autorisées.,True
+S004,Arrête-toi immédiatement,true,,stop_prioritaire,True,stop,1.0,,,Arrêt explicite accepté avec priorité de sécurité.,True
+S005,Va dans la chambre,false,UNKNOWN_DESTINATION,destination_inconnue,False,navigate,0.9798627495765686,,UNKNOWN_DESTINATION,La destination n'est pas un waypoint connu.,True
+S006,Bonjour robot,false,UNKNOWN_INTENT,hors_domaine,False,unknown,0.8663972616195679,,UNKNOWN_INTENT,Aucun indice explicite d'arrêt n'a été détecté.,True
+S007,,false,EMPTY_COMMAND,vide,False,unknown,0.0,,EMPTY_COMMAND,La commande est vide.,True
+S008,Prends la boîte rouge,false,UNSUPPORTED_ACTION,action_non_autorisee,False,unknown,0.0,,UNSUPPORTED_ACTION,Cette action ne fait pas partie des capacités autorisées.,True
+S009,Ne t'arrête pas,false,NEGATED_STOP,negation_stop,False,stop,1.0,,NEGATED_STOP,Une demande d'arrêt négative est ambiguë et a été refusée.,True
+S010,Va au bureau puis indique ta position,false,SEQUENTIAL_COMMAND,sequence,False,navigate,1.0,,SEQUENTIAL_COMMAND,Les commandes séquentielles ne sont pas autorisées.,True
+S011,Rends-toi au chargeur et au salon,false,MULTIPLE_DESTINATIONS,multiple_destinations,False,navigate,1.0,,MULTIPLE_DESTINATIONS,Plusieurs destinations ont été détectées; commande refusée.,True
+S012,Montre-moi la météo,false,UNKNOWN_INTENT,hors_domaine,False,unknown,0.9116573929786682,,UNKNOWN_INTENT,Aucun indice explicite de demande de position n'a été détecté.,True
+S013,Va dans la cuisine et arrête-toi,true,,stop_prioritaire,True,stop,1.0,,,Arrêt explicite accepté avec priorité de sécurité.,True
+S014,Déplace-toi vers le laboratoire,false,UNKNOWN_DESTINATION,destination_inconnue,False,navigate,0.9825766682624817,,UNKNOWN_DESTINATION,La destination n'est pas un waypoint connu.,True
+S015,Va dans la cuisine,false,CONTROL_CHARACTER,caractere_controle,False,unknown,0.0,,CONTROL_CHARACTER,La commande contient un caractère de contrôle.,True

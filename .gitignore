@@ -2,8 +2,11 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+.pytest-tmp/
 pytest-cache-files-*/
 .ruff_cache/
+.chart-data-*/
+tmp/
 .venv/
 venv/
 build/

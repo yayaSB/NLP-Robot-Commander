@@ -12,9 +12,7 @@ def generate_launch_description() -> LaunchDescription:
     return LaunchDescription(
         [
             DeclareLaunchArgument("use_sim_time", default_value="false"),
-            DeclareLaunchArgument(
-                "model_path", default_value="models/distilbert-robot-commander-20ep"
-            ),
+            DeclareLaunchArgument("model_path", default_value=""),
             Node(
                 package="nlp_robot_commander",
                 executable="nlp_commander",

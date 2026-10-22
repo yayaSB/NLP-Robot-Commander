@@ -1,36 +1,26 @@
-# Plan de soutenance et vidéo
+# Trame de soutenance
 
-## Démonstration vidéo (3 à 5 minutes)
+## Structure recommandée
 
-1. Afficher Gazebo et RViz2 avec le robot localisé.
-2. Montrer une navigation vers la cuisine depuis le terminal.
-3. Envoyer `stop` pendant le trajet et montrer l'annulation.
-4. Relancer une navigation, puis demander un rapport de position.
-5. Envoyer une destination inconnue et montrer le refus sans mouvement.
-6. Montrer une requête `pick` sur le topic dédié.
-7. Terminer par la matrice de confusion et un exemple de mode d'échec.
+1. Besoin : commander un robot mobile en français sans action ambiguë.
+2. Périmètre : trois intentions et quatre waypoints d’exemple.
+3. Données : 162 phrases de développement et 45 phrases de test indépendantes.
+4. Modèle : DistilBERT multilingue, graine 42, meilleur F1 macro.
+5. Sûreté : refus avant routage et priorité de l’arrêt explicite.
+6. ROS 2 : ActionClient Nav2, machine d’état d’annulation et TF fraîche.
+7. Résultats : 97,22 % validation, 100 % test indépendant, 15/15 sûreté.
+8. Limites : petit corpus, poids non versionnés, validation Gazebo manuelle.
+9. Démonstration guidée par `checklist_demo.md`.
 
-Enregistrez simultanément le terminal des statuts pour rendre visible la chaîne texte → intention → entité → action.
+## Formulation correcte des résultats
 
-## Présentation (10 à 12 diapositives)
+Dire : « Sur les 45 phrases du test indépendant fourni, les trois classes sont correctement reconnues. »
 
-1. Problème et objectif.
-2. Périmètre et quatre intentions.
-3. Architecture globale.
-4. Dataset et stratégie de séparation.
-5. Fine-tuning DistilBERT.
-6. Extraction des paramètres.
-7. Intégration ROS 2/Nav2.
-8. Protocole des 50 tests.
-9. Métriques et matrice de confusion.
-10. Catalogue des pannes.
-11. Démonstration.
-12. Limites, améliorations et conclusion.
+Ne pas dire : « Le système comprend toutes les formulations » ou « la navigation est validée » avant la campagne Ubuntu/Gazebo.
 
-## Checklist finale
+## Questions probables
 
-- Remplacer tous les champs `À MESURER` du rapport.
-- Vérifier les coordonnées de chaque waypoint sur la carte finale.
-- Noter le hash Git du modèle testé.
-- Tester une fois la vidéo et le dépôt sur une machine propre.
-- Ne pas annoncer de préhension physique si seul le topic de requête est utilisé.
+- Pourquoi DistilBERT ? Pour adapter un encodeur multilingue préentraîné à un petit corpus tout en restant plus léger que BERT complet.
+- Pourquoi des règles en plus du modèle ? Elles imposent des invariants de sûreté vérifiables avant toute action physique.
+- Pourquoi un test distinct ? Pour éviter d’annoncer la performance mesurée sur les données utilisées pour sélectionner le modèle.
+- Quand l’arrêt est-il confirmé ? Après un résultat Nav2 `canceled`, ou immédiatement si aucun but n’était actif.

@@ -1,4 +1,5 @@
 -r requirements.txt
 pytest>=8,<9
 ruff>=0.5,<1
+reportlab>=4,<5
 

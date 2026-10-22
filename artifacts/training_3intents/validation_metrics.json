@@ -1,0 +1,48 @@
+{
+  "accuracy": 0.9722222222222222,
+  "split_policy": "curated_train_validation",
+  "train_size": 126,
+  "validation_size": 36,
+  "seed": 42,
+  "model_name": "distilbert-base-multilingual-cased",
+  "epochs": 12,
+  "batch_size": 8,
+  "learning_rate": 2e-05,
+  "environment": {
+    "python": "3.13.13",
+    "torch": "2.14.1+cpu"
+  },
+  "classification_report": {
+    "navigate": {
+      "precision": 1.0,
+      "recall": 0.9166666666666666,
+      "f1-score": 0.9565217391304348,
+      "support": 12.0
+    },
+    "stop": {
+      "precision": 0.9230769230769231,
+      "recall": 1.0,
+      "f1-score": 0.96,
+      "support": 12.0
+    },
+    "report": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 12.0
+    },
+    "accuracy": 0.9722222222222222,
+    "macro avg": {
+      "precision": 0.9743589743589745,
+      "recall": 0.9722222222222222,
+      "f1-score": 0.9721739130434782,
+      "support": 36.0
+    },
+    "weighted avg": {
+      "precision": 0.9743589743589745,
+      "recall": 0.9722222222222222,
+      "f1-score": 0.9721739130434782,
+      "support": 36.0
+    }
+  }
+}

@@ -1,9 +1,17 @@
 from pathlib import Path
 
+import pytest
+
 from nlp_robot_commander.entity_extractor import EntityExtractor
 
 
-WAYPOINTS = Path(__file__).parents[1] / "src" / "nlp_robot_commander" / "config" / "waypoints.yaml"
+WAYPOINTS = (
+    Path(__file__).parents[1]
+    / "src"
+    / "nlp_robot_commander"
+    / "config"
+    / "waypoints.yaml"
+)
 
 
 def extractor():
@@ -20,18 +28,23 @@ def test_destination_matching_ignores_case_accents_and_punctuation():
     assert extractor().extract_destination("Rejoins le sejour.") == "salon"
 
 
-def test_unknown_destination_is_rejected():
+def test_unknown_and_multiple_destinations_are_not_single_targets():
     assert extractor().extract_destination("Va dans la chambre") is None
+    assert extractor().extract_destination("Cuisine ou salon") is None
+    assert extractor().extract_destinations("Cuisine ou salon") == ["cuisine", "salon"]
 
 
-def test_extracts_and_normalizes_object():
-    assert extractor().extract_object("Prends la boîte écarlate située devant toi") == "boite rouge"
-    assert extractor().extract_object("Ramasse le cube bleu puis attends") == "cube bleu"
+def test_waypoint_coordinates_are_numeric():
+    waypoint = extractor().waypoint("cuisine")
+    assert waypoint["x"] == pytest.approx(1.25)
+    assert waypoint["yaw"] == pytest.approx(1.57)
 
 
-def test_object_extraction_handles_politeness_and_long_determiners():
-    assert extractor().extract_object("Ramasse, si possible, le petit cube bleu") == "cube bleu"
-    assert extractor().extract_object("Saisis cette bouteille puis attends") == "bouteille"
-    assert extractor().extract_object("Soulève doucement le cube") == "cube"
-    assert extractor().extract_object("Récupère l'objet de couleur verte") == "objet vert"
-
+def test_ambiguous_alias_is_rejected():
+    with pytest.raises(ValueError, match="Alias ambigu"):
+        EntityExtractor(
+            {
+                "a": {"x": 0, "y": 0, "aliases": ["commun"]},
+                "b": {"x": 1, "y": 1, "aliases": ["commun"]},
+            }
+        )

@@ -9,6 +9,10 @@ class IntentClassifier(Protocol):
     def predict(self, text: str) -> IntentPrediction: ...
 
 
+class ModelLoadError(RuntimeError):
+    """Erreur explicite de chargement ou de compatibilité du checkpoint."""
+
+
 class RuleBasedIntentClassifier:
     """Secours déterministe pour la démo; DistilBERT reste le classifieur principal."""
 
@@ -27,17 +31,6 @@ class RuleBasedIntentClassifier:
             "n'avance",
             "cesse",
             "garde ta position",
-        ),
-        "pick": (
-            "prends",
-            "prendre",
-            "ramasse",
-            "saisis",
-            "attrape",
-            "recupere",
-            "recupere",
-            "souleve",
-            "va chercher",
         ),
         "report": (
             "ou es-tu",
@@ -75,7 +68,11 @@ class RuleBasedIntentClassifier:
             intent: sum(1 for keyword in keywords if keyword in normalized)
             for intent, keywords in self.KEYWORDS.items()
         }
-        # La politique pour une commande multi-intention privilégie le premier indice.
+        if not any(raw_scores.values()):
+            return IntentPrediction(
+                "unknown", 0.0, {intent: 0.0 for intent in VALID_INTENTS}
+            )
+
         positions = {
             intent: min(
                 (normalized.find(keyword) for keyword in keywords if keyword in normalized),
@@ -99,18 +96,41 @@ class TransformersIntentClassifier:
             import torch
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
         except ImportError as exc:
-            raise RuntimeError(
+            raise ModelLoadError(
                 "Installez torch et transformers pour utiliser le checkpoint DistilBERT."
             ) from exc
 
-        model_path = str(model_path)
+        path = Path(model_path).expanduser()
+        if not path.is_dir():
+            raise ModelLoadError(f"Checkpoint introuvable ou non lisible: {path}")
+
         self._torch = torch
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_path, fix_mistral_regex=False
-        )
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                str(path), local_files_only=True, fix_mistral_regex=False
+            )
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                str(path), local_files_only=True
+            )
+        except Exception as exc:
+            raise ModelLoadError(f"Checkpoint invalide dans {path}: {exc}") from exc
+
+        id2label = {
+            int(key): str(value).casefold()
+            for key, value in self.model.config.id2label.items()
+        }
+        if set(id2label.values()) != set(VALID_INTENTS) or len(id2label) != len(
+            VALID_INTENTS
+        ):
+            raise ModelLoadError(
+                "Le checkpoint doit exposer exactement les labels "
+                f"{list(VALID_INTENTS)}; labels trouvés: {sorted(id2label.values())}."
+            )
+        self._id2label = id2label
         self.model.eval()
-        self.max_length = max_length
+        self.max_length = int(max_length)
+        if self.max_length < 8:
+            raise ValueError("max_length doit être supérieur ou égal à 8.")
 
     def predict(self, text: str) -> IntentPrediction:
         encoded = self.tokenizer(
@@ -123,7 +143,9 @@ class TransformersIntentClassifier:
         with self._torch.no_grad():
             logits = self.model(**encoded).logits[0]
             probabilities = self._torch.softmax(logits, dim=-1).cpu().tolist()
-        id2label = {int(key): value for key, value in self.model.config.id2label.items()}
-        scores = {id2label[index]: float(score) for index, score in enumerate(probabilities)}
+        scores = {
+            self._id2label[index]: float(score)
+            for index, score in enumerate(probabilities)
+        }
         intent = max(scores, key=scores.get)
         return IntentPrediction(intent, scores[intent], scores)

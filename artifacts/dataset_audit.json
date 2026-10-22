@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "labels": [
+    "navigate",
+    "report",
+    "stop"
+  ],
+  "training_rows": 162,
+  "test_rows": 45,
+  "training_counts": {
+    "navigate": 54,
+    "stop": 54,
+    "report": 54
+  },
+  "split_counts": {
+    "train": 126,
+    "validation": 36
+  },
+  "test_counts": {
+    "navigate": 15,
+    "stop": 15,
+    "report": 15
+  },
+  "similarity_threshold": 0.94,
+  "exact_duplicates": [],
+  "near_duplicates": [],
+  "errors": []
+}

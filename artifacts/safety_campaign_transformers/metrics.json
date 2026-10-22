@@ -1,0 +1,6 @@
+{
+  "backend": "transformers",
+  "sample_count": 15,
+  "passed_count": 15,
+  "pass_rate": 1.0
+}

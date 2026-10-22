@@ -1,170 +1,163 @@
 # NLP Robot Commander
 
-Projet HESTIM de commande d'un robot mobile par langage naturel. Une phrase française est classée parmi quatre intentions (`navigate`, `stop`, `pick`, `report`), ses paramètres sont extraits, puis l'action correspondante est transmise à ROS 2/Nav2.
+Prototype HESTIM de commande d’un robot mobile TurtleBot3 par phrases françaises. Le système reconnaît exactement trois intentions :
 
-> Les coordonnées de `config/waypoints.yaml` sont des exemples. Relevez et remplacez-les dans RViz2 avant toute démonstration notée.
+| Intention | Exemple | Effet |
+|---|---|---|
+| `navigate` | « Rends-toi dans la cuisine » | Envoie un but `NavigateToPose` vers un waypoint autorisé |
+| `stop` | « Arrête-toi immédiatement » | Demande l’annulation du but et attend le résultat Nav2 |
+| `report` | « Où te trouves-tu ? » | Lit une transformation TF récente `map → base_link` |
+
+Toute commande vide, trop longue, niée, séquentielle, ambiguë, hors domaine ou visant une destination inconnue est refusée. Un arrêt explicite non nié a priorité sur les autres mots de la phrase.
+
+## Résultats mesurés
+
+Mesures du 22 octobre 2026, graine 42 :
+
+| Jeu | Taille | Accuracy | F1 macro | Remarque |
+|---|---:|---:|---:|---|
+| Validation figée | 36 | 97,22 % | 97,22 % | Meilleur checkpoint parmi 12 époques |
+| Test indépendant | 45 | 100,00 % | 100,00 % | 15 phrases par intention |
+| Sûreté/adversarial | 15 | 100,00 % | — | 15 décisions conformes attendues |
+
+Ces résultats évaluent le NLP et le pipeline de décision local. Ils ne prouvent pas le succès d’une navigation réelle. Gazebo, Nav2, TF et l’arrêt physique doivent être validés sur Ubuntu avec les procédures de [`docs/checklist_demo.md`](docs/checklist_demo.md) et [`docs/ACTIONS_MANUELLES.md`](docs/ACTIONS_MANUELLES.md).
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    U["Texte terminal ou micro"] --> T["Topic /nlp_command"]
-    T --> C["DistilBERT : intention + confiance"]
-    C --> E["Regex : destination ou objet"]
-    E --> V{"Validation"}
-    V -->|navigate| N["Nav2 NavigateToPose"]
-    V -->|stop| S["cancelTask + cmd_vel nul"]
-    V -->|pick| P["Topic pick_request"]
-    V -->|report| R["TF map → base_link"]
-    V -->|refus| X["Statut d'erreur sûr"]
+    A[Texte terminal ou micro] --> B[Contrôles de sûreté]
+    B --> C[DistilBERT 3 classes]
+    C --> D[Extraction destination]
+    D --> E[Routeur]
+    E -->|navigate| F[Action Nav2 /navigate_to_pose]
+    E -->|stop| G[Annulation suivie jusqu'au résultat]
+    E -->|report| H[TF map vers base_link]
+    F --> I[Statuts JSON]
+    G --> I
+    H --> I
 ```
 
-Le cœur NLP est indépendant de ROS 2. Il est donc testable sur Windows; l'intégration robotique s'exécute sous Ubuntu 22.04 avec ROS 2 Humble.
+Le classifieur lexical est un mode de secours explicite. Il est désactivé par défaut afin qu’un checkpoint manquant ou corrompu ne soit jamais masqué silencieusement.
 
-## Contenu du dépôt
+## Arborescence utile
 
-| Chemin | Rôle |
-|---|---|
-| `dataset/dataset.csv` | 80 phrases d'entraînement, 20 par intention |
-| `dataset/test_commands.csv` | 50 commandes inédites pour la campagne finale |
-| `scripts/train_intent_classifier.py` | Fine-tuning et validation DistilBERT |
-| `scripts/evaluate_intent_classifier.py` | Test indépendant, métriques et matrice de confusion |
-| `scripts/analyze_failure_modes.py` | Catalogue automatique des erreurs observées |
-| `src/nlp_robot_commander` | Package ROS 2 `ament_python` |
-| `tests` | Tests du dataset, des règles et de l'extraction |
-| `docs` | Proposition, protocole, architecture et rapport |
+```text
+dataset/                         corpus et campagnes indépendantes
+scripts/                         audit, entraînement, évaluation, démo locale
+src/nlp_robot_commander/         package ROS 2 Python
+tests/                           tests NLP, routage et machine d’état
+artifacts/training_3intents/      métriques de validation mesurées
+artifacts/test_campaign_3intents/ métriques du test indépendant
+artifacts/safety_campaign_transformers/ résultats adversariaux
+docs/                            rapport, guides et protocoles
+```
 
-## 1. Installation NLP
+## Installation NLP
 
-Python 3.10 est recommandé, car c'est la version système d'Ubuntu 22.04 et de ROS 2 Humble.
+Python 3.10 est recommandé pour rester aligné avec ROS 2 Humble.
 
 ```bash
-python3.10 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements-dev.txt
-pip install -e src/nlp_robot_commander
-pytest
+python -m pip install -r requirements-dev.txt
 ```
 
-Sous Windows, remplacez l'activation par `.venv\Scripts\activate`. Le cœur NLP fonctionne, mais ROS 2 Humble/Gazebo doit être exécuté sous Ubuntu 22.04.
+Audit des données et tests rapides :
 
-## 2. Entraînement DistilBERT
+```bash
+python scripts/audit_dataset.py --output artifacts/dataset_audit.json
+python -m pytest
+python -m compileall -q scripts src tests
+```
 
-Le modèle par défaut, `distilbert-base-multilingual-cased`, prend en charge le français.
+## Entraînement et évaluation
 
 ```bash
 python scripts/train_intent_classifier.py \
-  --dataset dataset/dataset.csv \
-  --output-dir models/distilbert-robot-commander-20ep \
-  --artifacts-dir artifacts/training_20ep \
-  --epochs 20
+  --output-dir models/distilbert-robot-commander-3intents \
+  --artifacts-dir artifacts/training_3intents \
+  --epochs 12 --batch-size 8 --seed 42
+
+python scripts/evaluate_intent_classifier.py \
+  --model models/distilbert-robot-commander-3intents \
+  --output-dir artifacts/test_campaign_3intents
+
+python scripts/evaluate_safety_commands.py \
+  --model models/distilbert-robot-commander-3intents \
+  --output-dir artifacts/safety_campaign_transformers
 ```
 
-Le script effectue un split stratifié 80/20 avec la graine 42. Il produit le checkpoint, les deux splits exacts, `validation_metrics.json` et `confusion_matrix.png`. L'objectif de 90 % est évalué, jamais présumé. Avec seulement 16 exemples de validation, le score doit être accompagné des résultats sur les 50 commandes inédites.
+Le dossier `models/` n’est pas versionné : le poids DistilBERT dépasse la limite de taille standard de GitHub. Il faut entraîner localement ou distribuer le checkpoint avec un stockage de modèles approprié.
 
 Démo locale sans ROS 2 :
 
 ```bash
-python scripts/demo_pipeline.py --model models/distilbert-robot-commander-20ep
+python scripts/demo_pipeline.py \
+  --model models/distilbert-robot-commander-3intents
 ```
 
-Sans `--model`, le script utilise uniquement le classifieur lexical de secours.
+## Installation ROS 2 Humble
 
-## 3. Évaluation sur les 50 commandes
-
-```bash
-python scripts/evaluate_intent_classifier.py \
-  --model models/distilbert-robot-commander-20ep \
-  --dataset dataset/test_commands.csv \
-  --output-dir artifacts/test_campaign_20ep
-python scripts/analyze_failure_modes.py \
-  --predictions artifacts/test_campaign_20ep/predictions.csv \
-  --output artifacts/test_campaign_20ep/failure_catalogue.md
-```
-
-Les sorties sont écrites dans `artifacts/test_campaign_20ep/`. Pour évaluer Nav2, renseignez la colonne `nav_result` (`succeeded`, `failed`, `aborted` ou `inaccessible`) dans une copie de `predictions.csv`, puis relancez l'analyse des pannes.
-
-## 4. Installation ROS 2 Humble et TurtleBot3
-
-Installez d'abord ROS 2 Humble, Nav2 et TurtleBot3 selon leur documentation officielle, puis dans un terminal Ubuntu :
-
-```bash
-sudo apt update
-sudo apt install ros-humble-navigation2 ros-humble-nav2-bringup \
-  ros-humble-turtlebot3-gazebo ros-humble-turtlebot3-navigation2 \
-  python3-colcon-common-extensions
-
-source /opt/ros/humble/setup.bash
-python3 -m venv --system-site-packages .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install -e src/nlp_robot_commander
-colcon build --symlink-install
-source install/setup.bash
-```
-
-## 5. Simulation et commande
-
-Lancez le monde TurtleBot3, Nav2 et le commander :
+Prérequis : Ubuntu 22.04, ROS 2 Humble, Nav2, TurtleBot3, Gazebo et les paquets Python du projet.
 
 ```bash
 source /opt/ros/humble/setup.bash
+export TURTLEBOT3_MODEL=burger
+colcon build --packages-select nlp_robot_commander --symlink-install
 source install/setup.bash
-ros2 launch nlp_robot_commander simulation.launch.py
 ```
 
-Si Nav2 est déjà lancé avec votre propre carte :
+Vérifier puis adapter les coordonnées dans `src/nlp_robot_commander/config/waypoints.yaml`. Démarrer la simulation complète avec un chemin absolu vers le checkpoint :
 
 ```bash
-ros2 launch nlp_robot_commander nlp_commander.launch.py
+ros2 launch nlp_robot_commander simulation.launch.py \
+  model_path:="$(realpath models/distilbert-robot-commander-3intents)" \
+  map:=/chemin/absolu/vers/map.yaml
 ```
 
-Dans un autre terminal, ouvrez le client interactif :
+Dans un second terminal :
 
 ```bash
+source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 run nlp_robot_commander terminal_client
 ```
 
-Exemples : `Rends-toi dans la cuisine`, `Arrête-toi`, `Prends la boîte rouge`, `Où es-tu ?`.
-
-Pour voir les décisions et résultats :
+Pour observer les événements :
 
 ```bash
 ros2 topic echo /nlp_commander/status
 ```
 
-Pour forcer le secours lexical si le checkpoint n'est pas disponible :
+## Sémantique de l’arrêt
 
-```bash
-ros2 run nlp_robot_commander nlp_commander --ros-args \
-  -p classifier_backend:=rules \
-  -p waypoints_file:=$(pwd)/src/nlp_robot_commander/config/waypoints.yaml
-```
+Les événements distinguent volontairement quatre étapes :
 
-## 6. Calibrage des waypoints
+1. `stop_received` : la demande est reçue ;
+2. `cancellation_requested` / `cancellation_accepted` : Nav2 traite l’annulation ;
+3. `stop_confirmed` : le résultat de l’action est réellement `canceled`, ou aucun but n’était actif ;
+4. `stop_unconfirmed` : refus, erreur, expiration du délai ou résultat incompatible.
 
-1. Dans RViz2, placez le robot dans chaque pièce.
-2. Lisez la pose avec `ros2 topic echo /amcl_pose --once`.
-3. Reportez `x`, `y` et le lacet (`yaw`) dans `src/nlp_robot_commander/config/waypoints.yaml`.
-4. Vérifiez chaque point avec Nav2 avant de tester une phrase NLP.
-5. Conservez la carte, la configuration et les coordonnées utilisées pour la soutenance.
+L’option `publish_zero_velocity_on_stop` est `false` par défaut. Un message nul sur `/cmd_vel` ne constitue jamais une confirmation d’arrêt Nav2 et peut entrer en conflit avec un multiplexeur de vitesse.
 
-## Sécurité et limites
+## Documentation
 
-- Une commande sous le seuil de confiance est refusée.
-- Une destination absente des waypoints n'est jamais envoyée à Nav2.
-- `stop` annule la tâche Nav2 et publie une vitesse nulle.
-- `pick` publie une requête : aucune préhension réelle n'est affirmée sans manipulateur abonné.
-- Les commandes à plusieurs intentions suivent une politique « première intention » seulement dans le secours lexical; elles doivent être analysées séparément avec le modèle entraîné.
+- [`docs/rapport_final.md`](docs/rapport_final.md) : rapport technique et audit complet ;
+- [`docs/guide_utilisateur.md`](docs/guide_utilisateur.md) : installation et utilisation ;
+- [`docs/test_protocol.md`](docs/test_protocol.md) : protocole reproductible ;
+- [`docs/failure_mode_catalogue.md`](docs/failure_mode_catalogue.md) : catalogue des modes d’échec ;
+- [`docs/checklist_demo.md`](docs/checklist_demo.md) : déroulé de soutenance ;
+- [`docs/ACTIONS_MANUELLES.md`](docs/ACTIONS_MANUELLES.md) : validations impossibles sur la machine Windows actuelle.
+- [`output/pdf/rapport_final_nlp_robot_commander.pdf`](output/pdf/rapport_final_nlp_robot_commander.pdf) : rapport PDF vérifié page par page ;
+- [`output/presentations/NLP_Robot_Commander_HESTIM_3_intentions.pptx`](output/presentations/NLP_Robot_Commander_HESTIM_3_intentions.pptx) : support de soutenance final.
 
-## Livrables HESTIM
+## Limites
 
-- [Fiche de proposition](docs/proposition_hestim.md)
-- [Architecture technique](docs/architecture.md)
-- [Protocole des 50 tests](docs/test_protocol.md)
-- [Catalogue des modes d'échec](docs/failure_mode_catalogue.md)
-- [Rapport technique final](docs/rapport_technique.md)
-- [Plan de soutenance et vidéo](docs/soutenance.md)
+- Les waypoints fournis sont des exemples et doivent être recalibrés sur la carte utilisée.
+- Aucun résultat Gazebo/Nav2 n’est inventé : cette validation reste manuelle sur Ubuntu 22.04.
+- Le corpus français reste petit ; le score de 100 % sur 45 phrases ne garantit pas la généralisation à toutes les formulations.
+- L’entrée micro repose sur un service externe si `SpeechRecognition` est utilisé.
 
+Licence MIT.

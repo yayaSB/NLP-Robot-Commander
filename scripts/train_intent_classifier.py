@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Fine-tuning reproductible de DistilBERT pour les quatre intentions."""
+"""Fine-tuning reproductible de DistilBERT pour les trois intentions."""
 
 import argparse
 import inspect
 import json
+import platform
 import random
+import re
+import unicodedata
 from pathlib import Path
 
 import matplotlib
@@ -17,7 +20,6 @@ import seaborn as sns
 import torch
 from datasets import Dataset
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -26,7 +28,7 @@ from transformers import (
     TrainingArguments,
 )
 
-LABELS = ["navigate", "stop", "pick", "report"]
+LABELS = ["navigate", "stop", "report"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -39,19 +41,42 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--learning-rate", type=float, default=2e-5)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--local-files-only", action="store_true")
     return parser.parse_args()
 
 
 def validate_dataset(frame: pd.DataFrame) -> None:
-    required = {"text", "intent"}
+    required = {"text", "intent", "split"}
     if not required.issubset(frame.columns):
         raise ValueError(f"Colonnes requises: {sorted(required)}")
     unknown = set(frame["intent"]) - set(LABELS)
     if unknown:
         raise ValueError(f"Intentions inconnues: {sorted(unknown)}")
-    counts = frame["intent"].value_counts()
-    if len(counts) != len(LABELS) or counts.min() < 2:
-        raise ValueError("Chaque intention doit contenir au moins deux exemples.")
+    if frame["text"].isna().any() or not frame["text"].astype(str).str.strip().all():
+        raise ValueError("Le dataset contient une phrase vide.")
+    if set(frame["split"]) != {"train", "validation"}:
+        raise ValueError("La colonne split doit contenir train et validation.")
+    for split_name, subset in frame.groupby("split"):
+        counts = subset["intent"].value_counts()
+        if set(counts.index) != set(LABELS) or counts.min() < 2:
+            raise ValueError(f"Split non équilibré ou incomplet: {split_name}")
+
+    normalized = frame["text"].map(normalize_for_audit)
+    duplicates = frame[normalized.duplicated(keep=False)]
+    if not duplicates.empty:
+        raise ValueError("Phrases dupliquées après normalisation.")
+    train_texts = set(normalized[frame["split"] == "train"])
+    validation_texts = set(normalized[frame["split"] == "validation"])
+    if train_texts & validation_texts:
+        raise ValueError("Fuite exacte entre entraînement et validation.")
+
+
+def normalize_for_audit(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", str(text).casefold())
+    ascii_text = "".join(
+        char for char in decomposed if not unicodedata.combining(char)
+    )
+    return re.sub(r"\W+", " ", ascii_text).strip()
 
 
 def set_seed(seed: int) -> None:
@@ -70,8 +95,11 @@ def build_training_arguments(args: argparse.Namespace) -> TrainingArguments:
         "per_device_eval_batch_size": args.batch_size,
         "num_train_epochs": args.epochs,
         "weight_decay": 0.01,
+        # save_only_model évite les états d'optimiseur très volumineux tout en
+        # permettant de restaurer le meilleur checkpoint de validation.
         "save_strategy": "epoch",
         "logging_strategy": "epoch",
+        "save_only_model": True,
         "load_best_model_at_end": True,
         "metric_for_best_model": "f1_macro",
         "greater_is_better": True,
@@ -98,18 +126,18 @@ def main() -> None:
     label2id = {label: index for index, label in enumerate(LABELS)}
     id2label = {index: label for label, index in label2id.items()}
     frame["label"] = frame["intent"].map(label2id)
-    train_frame, validation_frame = train_test_split(
-        frame,
-        test_size=0.20,
-        random_state=args.seed,
-        stratify=frame["intent"],
-    )
+    train_frame = frame[frame["split"] == "train"].copy()
+    validation_frame = frame[frame["split"] == "validation"].copy()
     train_frame.to_csv(args.artifacts_dir / "train_split.csv", index=False)
     validation_frame.to_csv(args.artifacts_dir / "validation_split.csv", index=False)
 
     # DistilBERT utilise BertPreTokenizer, pas le regex Mistral. Le drapeau False
     # évite qu'une version récente de Transformers tente un correctif incompatible.
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name, fix_mistral_regex=False)
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.model_name,
+        local_files_only=args.local_files_only,
+        fix_mistral_regex=False,
+    )
 
     def tokenize(batch):
         return tokenizer(batch["text"], truncation=True, max_length=128)
@@ -126,6 +154,7 @@ def main() -> None:
         num_labels=len(LABELS),
         id2label=id2label,
         label2id=label2id,
+        local_files_only=args.local_files_only,
     )
 
     def compute_metrics(evaluation):
@@ -185,13 +214,18 @@ def main() -> None:
     accuracy = float(accuracy_score(true_ids, predicted_ids))
     metrics = {
         "accuracy": accuracy,
-        "target_accuracy_reached": accuracy >= 0.90,
+        "split_policy": "curated_train_validation",
+        "train_size": len(train_frame),
         "validation_size": len(validation_frame),
         "seed": args.seed,
         "model_name": args.model_name,
         "epochs": args.epochs,
         "batch_size": args.batch_size,
         "learning_rate": args.learning_rate,
+        "environment": {
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+        },
         "classification_report": report,
     }
     (args.artifacts_dir / "validation_metrics.json").write_text(

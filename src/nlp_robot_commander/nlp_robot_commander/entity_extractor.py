@@ -1,4 +1,5 @@
 import re
+import math
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -9,40 +10,44 @@ from .types import EntityExtraction
 
 
 class EntityExtractor:
-    """Extrait une destination connue ou un objet sans dépendre d'un modèle NER."""
+    """Valide les waypoints et extrait les destinations autorisées."""
 
-    PICK_VERBS = (
-        "prends",
-        "prendre",
-        "ramasse",
-        "ramasser",
-        "saisis",
-        "saisir",
-        "attrape",
-        "attraper",
-        "recupere",
-        "recuperer",
-        "souleve",
-        "soulever",
-        "va chercher",
-    )
-
-    def __init__(
-        self,
-        waypoints: Mapping[str, Mapping[str, Any]],
-        object_aliases: Mapping[str, str] | None = None,
-    ) -> None:
-        self.waypoints = dict(waypoints)
-        self.object_aliases = {
-            normalize_text(key): normalize_text(value)
-            for key, value in (object_aliases or {}).items()
-        }
+    def __init__(self, waypoints: Mapping[str, Mapping[str, Any]]) -> None:
+        if not isinstance(waypoints, Mapping) or not waypoints:
+            raise ValueError("La configuration doit contenir au moins un waypoint.")
+        self.waypoints: dict[str, Mapping[str, Any]] = {}
         self._destination_aliases: list[tuple[str, str]] = []
-        for canonical, data in self.waypoints.items():
+        alias_owners: dict[str, str] = {}
+        for canonical, data in waypoints.items():
+            if not isinstance(canonical, str) or not canonical.strip():
+                raise ValueError("Chaque waypoint doit avoir un nom non vide.")
+            if not isinstance(data, Mapping):
+                raise ValueError(f"Waypoint invalide: {canonical}")
+            coordinates: dict[str, float] = {}
+            for key in ("x", "y", "yaw"):
+                try:
+                    value = float(data.get(key, 0.0 if key == "yaw" else None))
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(f"Coordonnée {key} invalide pour {canonical}.") from exc
+                if not math.isfinite(value):
+                    raise ValueError(f"Coordonnée {key} non finie pour {canonical}.")
+                coordinates[key] = value
+            aliases = data.get("aliases", [])
+            if not isinstance(aliases, list) or not all(
+                isinstance(alias, str) and alias.strip() for alias in aliases
+            ):
+                raise ValueError(f"Alias invalides pour {canonical}.")
+            self.waypoints[canonical] = {**data, **coordinates}
             aliases = [canonical, *data.get("aliases", [])]
-            self._destination_aliases.extend(
-                (normalize_text(alias), canonical) for alias in aliases
-            )
+            for alias in aliases:
+                normalized = normalize_text(alias)
+                owner = alias_owners.get(normalized)
+                if owner and owner != canonical:
+                    raise ValueError(
+                        f"Alias ambigu '{alias}' partagé par {owner} et {canonical}."
+                    )
+                alias_owners[normalized] = canonical
+                self._destination_aliases.append((normalized, canonical))
         self._destination_aliases.sort(key=lambda item: len(item[0]), reverse=True)
 
     @classmethod
@@ -52,45 +57,28 @@ class EntityExtractor:
         waypoints = config.get("waypoints")
         if not isinstance(waypoints, dict) or not waypoints:
             raise ValueError(f"Aucun waypoint valide dans {path}")
-        return cls(waypoints, config.get("object_aliases", {}))
+        unknown_keys = set(config) - {"waypoints"}
+        if unknown_keys:
+            raise ValueError(f"Clés de configuration inconnues: {sorted(unknown_keys)}")
+        return cls(waypoints)
 
     def extract(self, text: str, intent: str) -> EntityExtraction:
         if intent == "navigate":
             return EntityExtraction(destination=self.extract_destination(text))
-        if intent == "pick":
-            return EntityExtraction(object_name=self.extract_object(text))
         return EntityExtraction()
 
     def extract_destination(self, text: str) -> str | None:
+        destinations = self.extract_destinations(text)
+        return destinations[0] if len(destinations) == 1 else None
+
+    def extract_destinations(self, text: str) -> list[str]:
         normalized = normalize_text(text)
+        found: list[tuple[int, str]] = []
         for alias, canonical in self._destination_aliases:
-            if re.search(rf"(?<!\w){re.escape(alias)}(?!\w)", normalized):
-                return canonical
-        return None
-
-    def extract_object(self, text: str) -> str | None:
-        normalized = normalize_text(text)
-        verb_pattern = "|".join(re.escape(verb) for verb in self.PICK_VERBS)
-        match = re.search(rf"(?:{verb_pattern})\s+(.+)", normalized)
-        if not match:
-            # Forme passive fréquente: « le colis doit être récupéré ».
-            passive = re.search(r"^(?:le|la|un|une|ce|cette)\s+(.+?)\s+doit\s+etre", normalized)
-            return passive.group(1).strip() if passive else None
-
-        candidate = match.group(1).strip()
-        candidate = re.sub(r"^(?:si possible|doucement|delicatement)\s+", "", candidate)
-        candidate = re.sub(
-            r"^(?:cette|les|une|cet|des|le|la|un|ce|l')\s*", "", candidate
-        )
-        candidate = re.sub(r"^(?:petit|petite)\s+", "", candidate)
-        candidate = re.split(
-            r"\b(?:puis|ensuite|et ensuite|qui|situee?|posee?|devant|sur le sol|au sol)\b",
-            candidate,
-            maxsplit=1,
-        )[0].strip()
-        for source, target in self.object_aliases.items():
-            candidate = re.sub(rf"(?<!\w){re.escape(source)}(?!\w)", target, candidate)
-        return candidate or None
+            match = re.search(rf"(?<!\w){re.escape(alias)}(?!\w)", normalized)
+            if match and canonical not in {item[1] for item in found}:
+                found.append((match.start(), canonical))
+        return [canonical for _, canonical in sorted(found)]
 
     def waypoint(self, destination: str) -> Mapping[str, Any]:
         try:

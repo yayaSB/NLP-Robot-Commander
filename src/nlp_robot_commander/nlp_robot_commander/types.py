@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Mapping, Optional
 
 
-VALID_INTENTS = ("navigate", "stop", "pick", "report")
+VALID_INTENTS = ("navigate", "stop", "report")
 
 
 @dataclass(frozen=True)
@@ -15,7 +15,6 @@ class IntentPrediction:
 @dataclass(frozen=True)
 class EntityExtraction:
     destination: Optional[str] = None
-    object_name: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -24,7 +23,6 @@ class CommandDecision:
     intent: str
     confidence: float
     destination: Optional[str] = None
-    object_name: Optional[str] = None
     error_code: Optional[str] = None
     message: str = ""
 

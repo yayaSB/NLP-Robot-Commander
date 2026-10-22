@@ -20,9 +20,10 @@ if str(PACKAGE_ROOT) not in sys.path:
 
 from nlp_robot_commander.entity_extractor import EntityExtractor
 from nlp_robot_commander.intent_classifier import TransformersIntentClassifier
+from nlp_robot_commander.command_processor import CommandProcessor
 from nlp_robot_commander.text_utils import normalize_text
 
-LABELS = ["navigate", "stop", "pick", "report"]
+LABELS = ["navigate", "stop", "report"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,7 +45,7 @@ def infer_failure(row: pd.Series) -> str:
         return "WRONG_INTENT"
     expected_entity = normalize_text(clean_optional(row.get("expected_entity", "")))
     predicted_entity = normalize_text(clean_optional(row.get("predicted_entity", "")))
-    if expected_entity != predicted_entity and row["expected_intent"] in {"navigate", "pick"}:
+    if expected_entity != predicted_entity and row["expected_intent"] == "navigate":
         return "WRONG_OR_MISSING_PARAMETER"
     nav_result = clean_optional(row.get("nav_result", "")).casefold()
     if nav_result in {"failed", "aborted", "inaccessible", "echec", "échec"}:
@@ -58,29 +59,24 @@ def main() -> None:
     frame = pd.read_csv(args.dataset)
     if not {"text", "expected_intent"}.issubset(frame.columns):
         raise ValueError("Le CSV doit contenir text et expected_intent.")
+    unknown = set(frame["expected_intent"]) - set(LABELS)
+    if unknown:
+        raise ValueError(f"Intentions de test inconnues: {sorted(unknown)}")
 
     classifier = TransformersIntentClassifier(args.model)
     extractor = EntityExtractor.from_yaml(args.waypoints)
+    processor = CommandProcessor(classifier, extractor, args.threshold)
     predictions = [classifier.predict(text) for text in frame["text"]]
     frame["predicted_intent"] = [prediction.intent for prediction in predictions]
     frame["confidence"] = [round(prediction.confidence, 6) for prediction in predictions]
     frame["predicted_entity"] = [
-        extractor.extract(text, prediction.intent).destination
-        or extractor.extract(text, prediction.intent).object_name
-        or ""
+        extractor.extract(text, prediction.intent).destination or ""
         for text, prediction in zip(frame["text"], predictions)
     ]
     frame["accepted_by_confidence"] = frame["confidence"] >= args.threshold
-    frame["command_accepted"] = frame.apply(
-        lambda row: bool(
-            row["accepted_by_confidence"]
-            and not (
-                row["predicted_intent"] in {"navigate", "pick"}
-                and not clean_optional(row["predicted_entity"])
-            )
-        ),
-        axis=1,
-    )
+    decisions = [processor.process(text) for text in frame["text"]]
+    frame["command_accepted"] = [decision.accepted for decision in decisions]
+    frame["decision_error"] = [decision.error_code or "" for decision in decisions]
     frame["failure_mode"] = frame.apply(infer_failure, axis=1)
     frame.to_csv(args.output_dir / "predictions.csv", index=False)
 

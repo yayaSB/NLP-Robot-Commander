@@ -1,39 +1,30 @@
-# Fiche de proposition — NLP Robot Commander
+# Proposition de projet HESTIM
 
-**Établissement :** HESTIM  
-**Durée :** 6 semaines  
-**Technologies :** Ubuntu 22.04, ROS 2 Humble, Nav2, Gazebo, Python, PyTorch, Hugging Face Transformers
+## Titre
 
-## Contexte et problématique
+NLP Robot Commander — commande sûre d’un robot mobile par langage naturel français.
 
-Le pilotage d'un robot mobile impose habituellement une interface graphique ou des commandes techniques. Le projet propose une interface en français permettant à un utilisateur de donner des ordres naturels. Le défi consiste à transformer une phrase potentiellement variable ou ambiguë en une action robotique structurée et sûre.
+## Problématique
 
-## Objectif
+Transformer une phrase libre en une action Nav2 contrôlée sans envoyer de but incomplet, ambigu ou non autorisé, tout en produisant des traces permettant d’identifier la couche fautive.
 
-Réaliser et évaluer un pipeline complet capable de reconnaître quatre intentions — navigation, arrêt, préhension et rapport de position — puis d'exécuter l'action correspondante dans une simulation TurtleBot3/Nav2. Le système doit refuser les commandes insuffisamment fiables et documenter ses modes d'échec.
+## Périmètre
+
+Le prototype reconnaît trois intentions : navigation vers un waypoint connu, arrêt d’une navigation et rapport de la pose actuelle. Le robot cible est TurtleBot3 Burger sous Ubuntu 22.04, ROS 2 Humble, Nav2, Gazebo et RViz2.
 
 ## Méthode
 
-Un jeu équilibré de 80 phrases françaises sert au fine-tuning de DistilBERT multilingue. Un extracteur déterministe associe les noms de pièces aux coordonnées de la carte et extrait les objets. Le nœud ROS 2 transmet les destinations à `NavigateToPose`, annule une tâche pour `stop`, publie une requête pour `pick` et lit TF pour `report`. Une campagne distincte de 50 phrases mesure accuracy, précision, rappel, F1, extraction des paramètres et comportement Nav2.
+- Fine-tuning de DistilBERT multilingue sur un corpus français équilibré.
+- Extraction déterministe de destinations autorisées.
+- Politique de refus avant le routage ROS 2.
+- Client d’action `NavigateToPose` avec suivi asynchrone du résultat.
+- Lecture TF avec timeout et contrôle de fraîcheur.
+- Évaluation séparée : validation figée, test indépendant et campagne adversariale.
 
-## Résultats attendus
+## Livrables
 
-- Un classifieur visant une accuracy supérieure à 90 %, valeur à confirmer expérimentalement.
-- Un démonstrateur texte → intention/paramètre → action dans Gazebo.
-- Une matrice de confusion et un catalogue des erreurs NLP, paramètres et navigation.
-- Un dépôt reproductible avec tests, documentation, rapport et vidéo de démonstration.
+Code source, datasets, scripts reproductibles, tests unitaires, artefacts de métriques, rapport final, guide utilisateur, protocole de test et checklist de démonstration.
 
-## Planning synthétique
+## Risques
 
-| Semaine | Résultat principal |
-|---|---|
-| 1 | Simulation, waypoints et dataset |
-| 2–3 | Fine-tuning, extraction et évaluation initiale |
-| 3–4 | Nœud ROS 2 et intégration Nav2 |
-| 4–5 | Campagne de 50 tests et analyse des échecs |
-| 6 | Rapport, vidéo, dépôt et soutenance |
-
-## Risques et réponses
-
-Le petit dataset peut produire une variance élevée : split stratifié, graine fixe et test indépendant sont conservés. Une destination inconnue ou une faible confiance entraîne un refus. Les obstacles dynamiques sont distingués des erreurs NLP. La préhension reste une interface simulée si aucun bras robotique n'est disponible.
-
+Le petit corpus peut surestimer les performances. Les waypoints doivent être recalibrés. Les comportements Nav2, TF et Gazebo ne peuvent être certifiés sans exécution sur la plateforme ROS 2 cible.

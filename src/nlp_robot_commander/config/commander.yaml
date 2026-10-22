@@ -1,12 +1,19 @@
 nlp_commander:
   ros__parameters:
     classifier_backend: transformers
-    model_path: models/distilbert-robot-commander-20ep
+    model_path: ""
     confidence_threshold: 0.65
-    allow_rule_fallback: true
+    ambiguity_margin: 0.10
+    max_command_chars: 240
+    allow_rule_fallback: false
     input_topic: /nlp_command
     status_topic: /nlp_commander/status
-    pick_topic: /nlp_commander/pick_request
+    navigate_action: /navigate_to_pose
+    nav_server_timeout_sec: 3.0
+    cancel_timeout_sec: 3.0
+    tf_timeout_sec: 0.5
+    max_tf_age_sec: 1.0
+    publish_zero_velocity_on_stop: false
     cmd_vel_topic: /cmd_vel
     map_frame: map
     base_frame: base_link

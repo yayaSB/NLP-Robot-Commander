@@ -22,10 +22,3 @@ waypoints:
     yaw: 0.0
     aliases: [chargeur, base, station de recharge, station de charge, dock, dock de recharge]
 
-object_aliases:
-  écarlate: rouge
-  ecarlate: rouge
-  de couleur rouge: rouge
-  de couleur verte: vert
-  de couleur bleue: bleu
-
