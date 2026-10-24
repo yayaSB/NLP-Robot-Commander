@@ -174,6 +174,7 @@ L’option `publish_zero_velocity_on_stop` est `false` par défaut. Un message n
 
 ## Documentation
 
+- [`NLP_Robot_Commander_Presentation.ipynb`](NLP_Robot_Commander_Presentation.ipynb) : notebook exécutable de démonstration et de présentation des résultats ;
 - [`docs/HOW_TO_FIRST_RUN_ON_VSCODE.md`](docs/HOW_TO_FIRST_RUN_ON_VSCODE.md) : premier démarrage détaillé dans VS Code, sous Windows puis Ubuntu/ROS 2 ;
 - [`docs/rapport_final.md`](docs/rapport_final.md) : rapport technique et audit complet ;
 - [`docs/guide_utilisateur.md`](docs/guide_utilisateur.md) : installation et utilisation ;
