@@ -115,7 +115,7 @@ Ollama doit être démarré (`ollama serve` si l’application ne l’a pas déj
 ```bash
 python scripts/demo_pipeline.py \
   --model models/distilbert-robot-commander-3intents \
-  --llm --llm-model llama3.2:1b
+  --llm --llm-model llama3.2:1b --llm-timeout 60
 ```
 
 Essayez successivement :

@@ -101,6 +101,7 @@ Vous pouvez aussi utiliser le terminal :
 python .\scripts\demo_pipeline.py `
   --llm `
   --llm-model llama3.2:1b `
+  --llm-timeout 60 `
   --memory-db .\artifacts\runtime\command_memory.sqlite3
 ```
 
@@ -164,6 +165,7 @@ Commande équivalente :
 python .\scripts\demo_pipeline.py `
   --model .\models\distilbert-robot-commander-3intents `
   --llm --llm-model llama3.2:1b `
+  --llm-timeout 60 `
   --memory-db .\artifacts\runtime\command_memory.sqlite3
 ```
 
@@ -254,6 +256,7 @@ Avant la première navigation, placez la pose initiale du robot dans RViz2 et re
 | `No module named ...` | Vérifiez l’interpréteur `.venv`, puis réinstallez `requirements-dev.txt`. |
 | Ollama refuse la connexion | Démarrez l’application ou `ollama serve`, puis testez `ollama list`. |
 | Modèle Ollama absent | Exécutez `ollama pull llama3.2:1b`. |
+| Premier appel LLM expiré | Le chargement à froid peut être lent ; gardez `--llm-timeout 60` pour le premier lancement. |
 | `Checkpoint introuvable` | Copiez ou entraînez DistilBERT, ou lancez la configuration sans DistilBERT. |
 | `LLM_UNAVAILABLE` | Vérifiez Ollama ; retirez `--no-llm-fallback` si le secours est souhaité. |
 | `UNKNOWN_DESTINATION` | Utilisez un waypoint de `waypoints.yaml` ou ajoutez-y un alias unique. |

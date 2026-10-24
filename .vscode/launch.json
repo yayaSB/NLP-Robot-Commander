@@ -10,6 +10,8 @@
         "--llm",
         "--llm-model",
         "llama3.2:1b",
+        "--llm-timeout",
+        "60",
         "--memory-db",
         "${workspaceFolder}/artifacts/runtime/command_memory.sqlite3"
       ],
@@ -28,6 +30,8 @@
         "--llm",
         "--llm-model",
         "llama3.2:1b",
+        "--llm-timeout",
+        "60",
         "--memory-db",
         "${workspaceFolder}/artifacts/runtime/command_memory.sqlite3"
       ],
