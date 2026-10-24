@@ -98,6 +98,22 @@ def test_report_command_is_accepted():
 
 
 @pytest.mark.parametrize(
+    "text",
+    ["t ou?", "t'es où ?", "t'est ou?", "tu es où ?", "tu te trouves où ?"],
+)
+def test_familiar_report_variants_bypass_an_uncertain_llm(text):
+    llm = FakeLlm(LlmInterpretation("navigate", 0.5, None, False))
+
+    result = processor(llm=llm).process(text)
+
+    assert result.accepted
+    assert result.intent == "report"
+    assert result.confidence == 1.0
+    assert result.source == "deterministic_rules"
+    assert llm.history is None
+
+
+@pytest.mark.parametrize(
     ("text", "error"),
     [
         (" ", "EMPTY_COMMAND"),

@@ -98,7 +98,13 @@ class CommandProcessor:
         "deplace-toi",
         "retourne",
     )
-    _REPORT_PATTERNS = (
+    _DIRECT_REPORT_PATTERNS = (
+        r"\bt ou\b",
+        r"\bt'(?:es|est) ou\b",
+        r"\btu (?:es|est) ou\b",
+        r"\btu te trouves ou\b",
+    )
+    _REPORT_PATTERNS = _DIRECT_REPORT_PATTERNS + (
         r"\bou (?:es-tu|se situe|te trouves-tu)\b",
         r"\bou en es-tu\b",
         r"\bou (?:tu )?te situes\b",
@@ -224,6 +230,9 @@ class CommandProcessor:
         has_memory_reference = self._matches_any(
             normalized, self._MEMORY_REFERENCE_PATTERNS
         )
+        has_direct_report = self._matches_any(
+            normalized, self._DIRECT_REPORT_PATTERNS
+        )
         if (has_navigation_marker or has_memory_reference) and has_sequence_marker:
             return CommandDecision(
                 False,
@@ -279,6 +288,18 @@ class CommandProcessor:
                 1.0,
                 destination=destinations[0],
                 message="Navigation explicite acceptée par les règles déterministes.",
+                source="deterministic_rules",
+            )
+
+        if has_direct_report:
+            return CommandDecision(
+                True,
+                "report",
+                1.0,
+                message=(
+                    "Demande de position explicite acceptée par les règles "
+                    "déterministes."
+                ),
                 source="deterministic_rules",
             )
 
