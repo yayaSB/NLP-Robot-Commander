@@ -25,4 +25,17 @@ class CommandDecision:
     destination: Optional[str] = None
     error_code: Optional[str] = None
     message: str = ""
+    source: str = "classifier"
+    memory_used: bool = False
+
+
+@dataclass(frozen=True)
+class LlmInterpretation:
+    """Sortie structurée et non exécutable produite par le LLM."""
+
+    intent: str
+    confidence: float
+    destination: Optional[str] = None
+    uses_memory: bool = False
+    explanation: str = ""
 

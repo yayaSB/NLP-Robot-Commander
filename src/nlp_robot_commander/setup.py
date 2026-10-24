@@ -5,7 +5,7 @@ package_name = "nlp_robot_commander"
 
 setup(
     name=package_name,
-    version="0.2.0",
+    version="0.3.0",
     packages=find_packages(exclude=("test",)),
     data_files=[
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
@@ -17,7 +17,7 @@ setup(
     zip_safe=True,
     maintainer="Étudiant HESTIM",
     maintainer_email="student@example.com",
-    description="Commande d'un robot Nav2 par intentions en langage naturel.",
+    description="Commande Nav2 par NLP avec LLM local et mémoire optionnels.",
     license="MIT",
     entry_points={
         "console_scripts": [

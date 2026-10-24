@@ -2,8 +2,8 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>nlp_robot_commander</name>
-  <version>0.2.0</version>
-  <description>Commande d'un robot Nav2 par intentions en langage naturel.</description>
+  <version>0.3.0</version>
+  <description>Commande Nav2 par NLP avec LLM local et mémoire optionnels.</description>
   <maintainer email="student@example.com">Étudiant HESTIM</maintainer>
   <license>MIT</license>
 

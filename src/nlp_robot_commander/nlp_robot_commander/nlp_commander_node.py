@@ -1,5 +1,7 @@
 import json
 import math
+import queue
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
 import rclpy
@@ -14,6 +16,7 @@ from rclpy.time import Time
 from std_msgs.msg import String
 from tf2_ros import Buffer, TransformException, TransformListener
 
+from .command_memory import CommandMemory
 from .command_processor import CommandProcessor
 from .command_router import CommandRouter
 from .entity_extractor import EntityExtractor
@@ -22,6 +25,7 @@ from .intent_classifier import (
     RuleBasedIntentClassifier,
     TransformersIntentClassifier,
 )
+from .llm_interpreter import OllamaLlmInterpreter
 from .navigation_state import NavigationPhase, NavigationStateMachine, StopState
 
 
@@ -36,17 +40,31 @@ class NlpCommanderNode(Node):
         self.extractor = EntityExtractor.from_yaml(
             self.get_parameter("waypoints_file").value
         )
+        self.memory = self._build_memory()
+        llm_interpreter = self._build_llm_interpreter()
         self.processor = CommandProcessor(
             self._build_classifier(),
             self.extractor,
             float(self.get_parameter("confidence_threshold").value),
             float(self.get_parameter("ambiguity_margin").value),
             int(self.get_parameter("max_command_chars").value),
+            llm_interpreter=llm_interpreter,
+            memory=self.memory,
+            llm_history_size=int(self.get_parameter("llm_history_size").value),
+            allow_llm_fallback=bool(
+                self.get_parameter("llm_fallback_to_classifier").value
+            ),
         )
         self.router = CommandRouter(self)
         self.navigation = NavigationStateMachine()
         self.goal_handle = None
         self.cancel_deadline_ns: int | None = None
+        self._command_epoch = 0
+        self._nlp_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="nlp-llm"
+        )
+        self._nlp_results: queue.SimpleQueue = queue.SimpleQueue()
+        self._pending_nlp: Future | None = None
 
         self.action_client = ActionClient(
             self,
@@ -70,6 +88,7 @@ class NlpCommanderNode(Node):
             10,
         )
         self.watchdog_timer = self.create_timer(0.1, self._check_cancel_timeout)
+        self.nlp_result_timer = self.create_timer(0.05, self._drain_nlp_results)
         self.get_logger().info("NLP Robot Commander prêt à recevoir des commandes.")
 
     def _declare_parameters(self) -> None:
@@ -85,6 +104,14 @@ class NlpCommanderNode(Node):
         self.declare_parameter("ambiguity_margin", 0.10)
         self.declare_parameter("max_command_chars", 240)
         self.declare_parameter("allow_rule_fallback", False)
+        self.declare_parameter("llm_enabled", False)
+        self.declare_parameter("llm_model", "llama3.2:1b")
+        self.declare_parameter("llm_endpoint", "http://127.0.0.1:11434")
+        self.declare_parameter("llm_timeout_sec", 20.0)
+        self.declare_parameter("llm_history_size", 8)
+        self.declare_parameter("llm_memory_max_entries", 200)
+        self.declare_parameter("llm_memory_db_path", "")
+        self.declare_parameter("llm_fallback_to_classifier", True)
         self.declare_parameter("input_topic", "/nlp_command")
         self.declare_parameter("status_topic", "/nlp_commander/status")
         self.declare_parameter("navigate_action", "/navigate_to_pose")
@@ -103,9 +130,51 @@ class NlpCommanderNode(Node):
             "cancel_timeout_sec",
             "tf_timeout_sec",
             "max_tf_age_sec",
+            "llm_timeout_sec",
         ):
             if float(self.get_parameter(name).value) <= 0:
                 raise ValueError(f"{name} doit être strictement positif.")
+        for name in ("llm_history_size", "llm_memory_max_entries"):
+            if int(self.get_parameter(name).value) < 1:
+                raise ValueError(f"{name} doit être strictement positif.")
+
+    def _build_memory(self) -> CommandMemory | None:
+        if not self.get_parameter("llm_enabled").value:
+            return None
+        configured = str(self.get_parameter("llm_memory_db_path").value).strip()
+        if configured:
+            path = Path(configured).expanduser()
+            if not path.is_absolute():
+                raise ValueError("llm_memory_db_path doit être un chemin absolu.")
+        else:
+            path = (
+                Path.home()
+                / ".local"
+                / "share"
+                / "nlp_robot_commander"
+                / "command_memory.sqlite3"
+            )
+        memory = CommandMemory(
+            path, int(self.get_parameter("llm_memory_max_entries").value)
+        )
+        self.get_logger().info(f"Mémoire locale des commandes: {path}")
+        return memory
+
+    def _build_llm_interpreter(self) -> OllamaLlmInterpreter | None:
+        if not self.get_parameter("llm_enabled").value:
+            self.get_logger().info("LLM local désactivé; DistilBERT reste actif.")
+            return None
+        interpreter = OllamaLlmInterpreter(
+            tuple(self.extractor.waypoints),
+            model=str(self.get_parameter("llm_model").value),
+            endpoint=str(self.get_parameter("llm_endpoint").value),
+            timeout_sec=float(self.get_parameter("llm_timeout_sec").value),
+        )
+        self.get_logger().info(
+            "LLM local activé via Ollama: "
+            f"{self.get_parameter('llm_model').value}"
+        )
+        return interpreter
 
     def _build_classifier(self):
         backend = str(self.get_parameter("classifier_backend").value).casefold()
@@ -134,21 +203,71 @@ class NlpCommanderNode(Node):
         return classifier
 
     def _on_command(self, message: String) -> None:
+        text = message.data
+        if self.processor.is_priority_stop(text):
+            self._command_epoch += 1
+            if self._pending_nlp is not None:
+                self._pending_nlp.cancel()
+            try:
+                decision = self.processor.process(text)
+            except Exception as exc:
+                self._publish_status("command_error", error=str(exc))
+                self.get_logger().error(f"Échec du traitement de l'arrêt: {exc}")
+                return
+            self._handle_decision(text, decision)
+            return
+
+        if self._pending_nlp is not None and not self._pending_nlp.done():
+            self._publish_status("command_rejected", text=text, reason="nlp_busy")
+            return
+        epoch = self._command_epoch
+        future = self._nlp_executor.submit(self.processor.process, text)
+        self._pending_nlp = future
+
+        def enqueue_result(completed: Future) -> None:
+            self._nlp_results.put((epoch, text, completed))
+
+        future.add_done_callback(
+            enqueue_result
+        )
+        self._publish_status("command_processing", text=text)
+
+    def _drain_nlp_results(self) -> None:
+        while True:
+            try:
+                epoch, text, future = self._nlp_results.get_nowait()
+            except queue.Empty:
+                return
+            if future is self._pending_nlp:
+                self._pending_nlp = None
+            if epoch != self._command_epoch:
+                self._publish_status(
+                    "command_discarded", text=text, reason="stop_received_after_command"
+                )
+                continue
+            self._complete_nlp_future(text, future)
+
+    def _complete_nlp_future(self, text: str, future: Future) -> None:
         try:
-            decision = self.processor.process(message.data)
+            decision = future.result()
         except Exception as exc:
             self._publish_status("command_error", error=str(exc))
             self.get_logger().error(f"Échec du traitement de la commande: {exc}")
             return
+        self._handle_decision(text, decision)
+
+    def _handle_decision(self, text: str, decision) -> None:
         self._publish_status(
             "command_parsed",
-            text=message.data,
+            text=text,
             accepted=decision.accepted,
             intent=decision.intent,
             confidence=round(decision.confidence, 4),
             destination=decision.destination,
             error_code=decision.error_code,
             message=decision.message,
+            source=decision.source,
+            memory_used=decision.memory_used,
         )
         try:
             routed = self.router.route(decision)
@@ -158,6 +277,15 @@ class NlpCommanderNode(Node):
             return
         if not routed:
             self.get_logger().warning(f"Commande refusée: {decision.message}")
+            return
+        self.processor.remember(text, decision)
+        if decision.source == "classifier_fallback":
+            self.get_logger().warning(decision.message)
+
+    def close(self) -> None:
+        self._nlp_executor.shutdown(wait=True, cancel_futures=True)
+        if self.memory is not None:
+            self.memory.close()
 
     def navigate(self, destination: str) -> None:
         if self.navigation.phase != NavigationPhase.IDLE:
@@ -392,6 +520,7 @@ def main(args=None) -> None:
         pass
     finally:
         if node is not None:
+            node.close()
             node.action_client.destroy()
             node.destroy_node()
         if rclpy.ok():

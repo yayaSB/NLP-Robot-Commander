@@ -18,6 +18,25 @@ Exemples attendus :
 - `Ne va pas dans la cuisine` → refus `NEGATED_COMMAND` ;
 - `Va dans la cuisine puis dans le laboratoire` → refus `SEQUENTIAL_COMMAND`.
 
+## Activer la mémoire LLM locale
+
+Installez Ollama sur la même machine que le nœud, puis :
+
+```bash
+ollama pull llama3.2:1b
+ollama serve
+```
+
+Si l’application Ollama tourne déjà, la seconde commande est inutile. Testez sans ROS 2 :
+
+```bash
+python scripts/demo_pipeline.py \
+  --model models/distilbert-robot-commander-3intents \
+  --llm --llm-model llama3.2:1b
+```
+
+Entrez `Va dans la cuisine`, puis `Refais la dernière commande`. L’historique se trouve par défaut dans `~/.local/share/nlp_robot_commander/command_memory.sqlite3`. `--clear-memory` l’efface au démarrage. Il ne contient que les commandes acceptées et reste limité à 200 lignes.
+
 ## Préparer ROS 2
 
 Sous Ubuntu 22.04 :
@@ -36,6 +55,7 @@ Adaptez `waypoints.yaml` à la carte. Chaque entrée exige `x`, `y`, `yaw` et un
 ```bash
 ros2 launch nlp_robot_commander simulation.launch.py \
   model_path:="$(realpath models/distilbert-robot-commander-3intents)" \
+  llm_enabled:=true llm_model:=llama3.2:1b \
   map:=/chemin/vers/map.yaml
 ```
 
@@ -50,7 +70,7 @@ L’entrée micro est optionnelle : installez `requirements-audio.txt`, vérifie
 
 ## Lire les statuts
 
-Chaque message est un objet JSON avec un champ `event`. `command_parsed` indique acceptation, intention, confiance, destination et éventuel code d’erreur. Pour l’arrêt, attendez `stop_confirmed`; `cancellation_requested` ne suffit pas. Pour la position, n’utilisez que `position_report`; les événements `position_stale` et `position_unavailable` signifient qu’aucune pose actuelle fiable n’est disponible.
+Chaque message est un objet JSON avec un champ `event`. `command_parsed` indique acceptation, intention, confiance, destination, `source`, `memory_used` et éventuel code d’erreur. Pour l’arrêt, attendez `stop_confirmed`; `cancellation_requested` ne suffit pas. Pour la position, n’utilisez que `position_report`; les événements `position_stale` et `position_unavailable` signifient qu’aucune pose actuelle fiable n’est disponible.
 
 ## Dépannage
 
@@ -58,4 +78,6 @@ Chaque message est un objet JSON avec un champ `event`. `command_parsed` indique
 - `Checkpoint invalide` : réentraînez le modèle ou vérifiez tous ses fichiers.
 - `action_server_unavailable` : activez Nav2 et contrôlez `/navigate_to_pose`.
 - `position_unavailable` : vérifiez les frames `map` et `base_link` ainsi que la localisation.
+- `LLM_UNAVAILABLE` : démarrez Ollama, vérifiez `ollama list`, ou activez le secours avec `llm_fallback_to_classifier: true`.
+- `source: classifier_fallback` : la commande a été traitée sans LLM, car le secours explicitement configuré a été utilisé.
 - But refusé : contrôlez la carte, le lifecycle Nav2, la pose initiale et les costmaps.

@@ -27,9 +27,11 @@ Ces résultats évaluent le NLP et le pipeline de décision local. Ils ne prouve
 ```mermaid
 flowchart LR
     A[Texte terminal ou micro] --> B[Contrôles de sûreté]
-    B --> C[DistilBERT 3 classes]
-    C --> D[Extraction destination]
-    D --> E[Routeur]
+    B --> C{LLM local activé ?}
+    C -->|oui| M[Ollama + mémoire SQLite]
+    C -->|non ou secours explicite| D[DistilBERT 3 classes]
+    M --> E[Validation structurée]
+    D --> E
     E -->|navigate| F[Action Nav2 /navigate_to_pose]
     E -->|stop| G[Annulation suivie jusqu'au résultat]
     E -->|report| H[TF map vers base_link]
@@ -39,6 +41,8 @@ flowchart LR
 ```
 
 Le classifieur lexical est un mode de secours explicite. Il est désactivé par défaut afin qu’un checkpoint manquant ou corrompu ne soit jamais masqué silencieusement.
+
+Le LLM est une extension locale et optionnelle. Il ne reçoit aucun accès à ROS 2 : il retourne seulement un JSON contraint, ensuite revérifié par les règles de sûreté et la liste blanche des waypoints. Sa « mémoire » ne modifie pas ses poids. Elle conserve au maximum 200 commandes acceptées dans SQLite et fournit les 8 plus récentes comme contexte. Cela permet par exemple `Va dans la cuisine`, puis `Refais la dernière commande`.
 
 ## Arborescence utile
 
@@ -98,6 +102,31 @@ python scripts/demo_pipeline.py \
   --model models/distilbert-robot-commander-3intents
 ```
 
+## LLM local avec mémoire
+
+Le backend utilise l’API locale d’[Ollama](https://docs.ollama.com/api/chat) et ses sorties JSON structurées. Aucun compte ni aucune clé API ne sont nécessaires. Après avoir installé Ollama, téléchargez une fois le petit modèle multilingue :
+
+```bash
+ollama pull llama3.2:1b
+```
+
+Ollama doit être démarré (`ollama serve` si l’application ne l’a pas déjà fait). Lancez ensuite la démo avec DistilBERT en secours :
+
+```bash
+python scripts/demo_pipeline.py \
+  --model models/distilbert-robot-commander-3intents \
+  --llm --llm-model llama3.2:1b
+```
+
+Essayez successivement :
+
+```text
+Va dans la cuisine
+Refais la dernière commande
+```
+
+Le deuxième résultat doit contenir `"source": "llm"`, `"memory_used": true` et `"destination": "cuisine"`. Pour repartir sans historique, ajoutez `--clear-memory` au lancement. La base locale n’est pas versionnée par Git.
+
 ## Installation ROS 2 Humble
 
 Prérequis : Ubuntu 22.04, ROS 2 Humble, Nav2, TurtleBot3, Gazebo et les paquets Python du projet.
@@ -114,6 +143,7 @@ Vérifier puis adapter les coordonnées dans `src/nlp_robot_commander/config/way
 ```bash
 ros2 launch nlp_robot_commander simulation.launch.py \
   model_path:="$(realpath models/distilbert-robot-commander-3intents)" \
+  llm_enabled:=true llm_model:=llama3.2:1b \
   map:=/chemin/absolu/vers/map.yaml
 ```
 
@@ -144,6 +174,7 @@ L’option `publish_zero_velocity_on_stop` est `false` par défaut. Un message n
 
 ## Documentation
 
+- [`docs/HOW_TO_FIRST_RUN_ON_VSCODE.md`](docs/HOW_TO_FIRST_RUN_ON_VSCODE.md) : premier démarrage détaillé dans VS Code, sous Windows puis Ubuntu/ROS 2 ;
 - [`docs/rapport_final.md`](docs/rapport_final.md) : rapport technique et audit complet ;
 - [`docs/guide_utilisateur.md`](docs/guide_utilisateur.md) : installation et utilisation ;
 - [`docs/test_protocol.md`](docs/test_protocol.md) : protocole reproductible ;
@@ -158,6 +189,8 @@ L’option `publish_zero_velocity_on_stop` est `false` par défaut. Un message n
 - Les waypoints fournis sont des exemples et doivent être recalibrés sur la carte utilisée.
 - Aucun résultat Gazebo/Nav2 n’est inventé : cette validation reste manuelle sur Ubuntu 22.04.
 - Le corpus français reste petit ; le score de 100 % sur 45 phrases ne garantit pas la généralisation à toutes les formulations.
+- La mémoire fournit du contexte au LLM mais ne réalise pas de réentraînement en ligne. Une sortie LLM reste non déterministe et est toujours filtrée avant routage.
+- Si Ollama est indisponible et `llm_fallback_to_classifier` vaut `true`, le statut expose `source: classifier_fallback`. Avec `false`, la commande est refusée avec `LLM_UNAVAILABLE`.
 - L’entrée micro repose sur un service externe si `SpeechRecognition` est utilisé.
 
 Licence MIT.

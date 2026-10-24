@@ -6,6 +6,16 @@ nlp_commander:
     ambiguity_margin: 0.10
     max_command_chars: 240
     allow_rule_fallback: false
+    # Extension optionnelle: LLM génératif local + mémoire persistante.
+    llm_enabled: false
+    llm_model: llama3.2:1b
+    llm_endpoint: http://127.0.0.1:11434
+    llm_timeout_sec: 20.0
+    llm_history_size: 8
+    llm_memory_max_entries: 200
+    # Vide = ~/.local/share/nlp_robot_commander/command_memory.sqlite3
+    llm_memory_db_path: ""
+    llm_fallback_to_classifier: true
     input_topic: /nlp_command
     status_topic: /nlp_commander/status
     navigate_action: /navigate_to_pose

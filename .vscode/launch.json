@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "NLP demo: LLM + memory",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/demo_pipeline.py",
+      "args": [
+        "--llm",
+        "--llm-model",
+        "llama3.2:1b",
+        "--memory-db",
+        "${workspaceFolder}/artifacts/runtime/command_memory.sqlite3"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "NLP demo: DistilBERT + LLM + memory",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/demo_pipeline.py",
+      "args": [
+        "--model",
+        "${workspaceFolder}/models/distilbert-robot-commander-3intents",
+        "--llm",
+        "--llm-model",
+        "llama3.2:1b",
+        "--memory-db",
+        "${workspaceFolder}/artifacts/runtime/command_memory.sqlite3"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

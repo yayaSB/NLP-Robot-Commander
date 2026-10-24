@@ -15,7 +15,11 @@ log/
 models/*
 !models/.gitkeep
 !models/README.md
+*.sqlite3
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
 

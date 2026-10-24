@@ -1,10 +1,12 @@
 import re
 import unicodedata
 
+from .command_memory import CommandMemory
 from .entity_extractor import EntityExtractor
 from .intent_classifier import IntentClassifier
+from .llm_interpreter import LlmError, LlmInterpreter
 from .text_utils import normalize_text
-from .types import CommandDecision, VALID_INTENTS
+from .types import CommandDecision, IntentPrediction, VALID_INTENTS
 
 
 class CommandProcessor:
@@ -17,6 +19,10 @@ class CommandProcessor:
         confidence_threshold: float = 0.65,
         ambiguity_margin: float = 0.10,
         max_command_chars: int = 240,
+        llm_interpreter: LlmInterpreter | None = None,
+        memory: CommandMemory | None = None,
+        llm_history_size: int = 8,
+        allow_llm_fallback: bool = True,
     ) -> None:
         if not 0.0 <= confidence_threshold <= 1.0:
             raise ValueError("confidence_threshold doit être compris entre 0 et 1.")
@@ -24,11 +30,17 @@ class CommandProcessor:
             raise ValueError("ambiguity_margin doit être compris entre 0 et 1.")
         if max_command_chars < 16:
             raise ValueError("max_command_chars doit être supérieur ou égal à 16.")
+        if llm_history_size < 1:
+            raise ValueError("llm_history_size doit être strictement positif.")
         self.classifier = classifier
         self.extractor = extractor
         self.confidence_threshold = confidence_threshold
         self.ambiguity_margin = ambiguity_margin
         self.max_command_chars = max_command_chars
+        self.llm_interpreter = llm_interpreter
+        self.memory = memory
+        self.llm_history_size = int(llm_history_size)
+        self.allow_llm_fallback = bool(allow_llm_fallback)
 
     _STOP_PATTERNS = (
         r"\barrete(?:-toi|z-vous)?\b",
@@ -103,6 +115,36 @@ class CommandProcessor:
         r"\bindique tf\b",
         r"\brapporte\b",
     )
+    _MEMORY_REFERENCE_PATTERNS = (
+        r"\brefais\b",
+        r"\brepete\b",
+        r"\bmeme commande\b",
+        r"\bcomme (?:avant|la derniere fois)\b",
+        r"\bderniere commande\b",
+        r"\bcommande precedente\b",
+        r"\bretourne la-bas\b",
+        r"\breviens la-bas\b",
+        r"\bencore une fois\b",
+    )
+
+    def is_priority_stop(self, text: str) -> bool:
+        """Détecte un arrêt explicite sans effectuer d'appel au LLM."""
+
+        if not isinstance(text, str):
+            return False
+        normalized = normalize_text(text)
+        return not self._matches_any(
+            normalized, self._NEGATED_STOP
+        ) and self._matches_any(
+            normalized,
+            self._STOP_PATTERNS,
+        )
+
+    def remember(self, text: str, decision: CommandDecision) -> None:
+        """Mémorise explicitement une décision après son routage par l'appelant."""
+
+        if self.memory is not None:
+            self.memory.record(text, decision)
 
     def process(self, text: str) -> CommandDecision:
         if not isinstance(text, str) or not text.strip():
@@ -139,12 +181,13 @@ class CommandProcessor:
                 error_code="NEGATED_STOP",
                 message="Une demande d'arrêt négative est ambiguë et a été refusée.",
             )
-        if self._matches_any(normalized, self._STOP_PATTERNS):
+        if self.is_priority_stop(text):
             return CommandDecision(
                 True,
                 "stop",
                 1.0,
                 message="Arrêt explicite accepté avec priorité de sécurité.",
+                source="safety_rules",
             )
         if self._matches_any(normalized, self._OUT_OF_SCOPE_ACTIONS):
             return CommandDecision(
@@ -175,7 +218,9 @@ class CommandProcessor:
         has_navigation_marker = any(
             marker in normalized for marker in self._NAVIGATION_MARKERS
         )
-        if has_navigation_marker and re.search(r"\b(?:puis|ensuite|apres cela)\b", normalized):
+        if has_navigation_marker and re.search(
+            r"\b(?:puis|ensuite|apres cela)\b", normalized
+        ):
             return CommandDecision(
                 False,
                 "navigate",
@@ -184,7 +229,41 @@ class CommandProcessor:
                 message="Les commandes séquentielles ne sont pas autorisées.",
             )
 
-        prediction = self.classifier.predict(text)
+        source = "classifier"
+        memory_used = False
+        llm_destination = None
+        history = []
+        if self.llm_interpreter is not None:
+            history = (
+                self.memory.recent(self.llm_history_size)
+                if self.memory is not None
+                else []
+            )
+            try:
+                interpretation = self.llm_interpreter.interpret(text, history)
+            except LlmError as exc:
+                if not self.allow_llm_fallback:
+                    return CommandDecision(
+                        False,
+                        "unknown",
+                        0.0,
+                        error_code="LLM_UNAVAILABLE",
+                        message=str(exc),
+                        source="llm",
+                    )
+                prediction = self.classifier.predict(text)
+                source = "classifier_fallback"
+            else:
+                prediction = IntentPrediction(
+                    interpretation.intent,
+                    interpretation.confidence,
+                )
+                source = "llm"
+                memory_used = interpretation.uses_memory
+                llm_destination = interpretation.destination
+        else:
+            prediction = self.classifier.predict(text)
+
         if prediction.intent not in VALID_INTENTS:
             return CommandDecision(
                 False,
@@ -192,6 +271,8 @@ class CommandProcessor:
                 prediction.confidence,
                 error_code="UNKNOWN_INTENT",
                 message="L'intention prédite n'est pas prise en charge.",
+                source=source,
+                memory_used=memory_used,
             )
         if prediction.confidence < self.confidence_threshold:
             return CommandDecision(
@@ -200,6 +281,8 @@ class CommandProcessor:
                 prediction.confidence,
                 error_code="LOW_CONFIDENCE",
                 message="Confiance insuffisante; commande refusée par sécurité.",
+                source=source,
+                memory_used=memory_used,
             )
         if prediction.intent == "stop":
             return CommandDecision(
@@ -208,16 +291,47 @@ class CommandProcessor:
                 prediction.confidence,
                 error_code="UNKNOWN_INTENT",
                 message="Aucun indice explicite d'arrêt n'a été détecté.",
+                source=source,
+                memory_used=memory_used,
             )
-        if prediction.intent == "report" and not self._matches_any(
-            normalized, self._REPORT_PATTERNS
+        has_memory_reference = self._matches_any(
+            normalized, self._MEMORY_REFERENCE_PATTERNS
+        )
+        if memory_used and (
+            not has_memory_reference
+            or not any(
+                item.intent == prediction.intent
+                and item.destination == llm_destination
+                for item in history
+            )
+        ):
+            return CommandDecision(
+                False,
+                prediction.intent,
+                prediction.confidence,
+                error_code="LLM_MEMORY_MISMATCH",
+                message=(
+                    "La décision attribuée à la mémoire ne correspond à aucune "
+                    "commande acceptée de l'historique."
+                ),
+                source=source,
+                memory_used=True,
+            )
+        contextual_decision = memory_used and has_memory_reference
+        if prediction.intent == "report" and not (
+            self._matches_any(normalized, self._REPORT_PATTERNS)
+            or contextual_decision
         ):
             return CommandDecision(
                 False,
                 "unknown",
                 prediction.confidence,
                 error_code="UNKNOWN_INTENT",
-                message="Aucun indice explicite de demande de position n'a été détecté.",
+                message=(
+                    "Aucun indice explicite de demande de position n'a été détecté."
+                ),
+                source=source,
+                memory_used=memory_used,
             )
 
         ordered_scores = sorted(prediction.scores.values(), reverse=True)
@@ -230,24 +344,72 @@ class CommandProcessor:
                     prediction.confidence,
                     error_code="AMBIGUOUS_INTENT",
                     message="Les deux intentions les plus probables sont trop proches.",
+                    source=source,
+                    memory_used=memory_used,
                 )
 
         entities = self.extractor.extract(text, prediction.intent)
-        if prediction.intent == "navigate" and not entities.destination:
+        destination = entities.destination
+        if prediction.intent == "navigate" and source == "llm":
+            if llm_destination not in {None, *self.extractor.waypoints}:
+                return CommandDecision(
+                    False,
+                    prediction.intent,
+                    prediction.confidence,
+                    error_code="LLM_DESTINATION_INVALID",
+                    message="Le LLM a proposé une destination non autorisée.",
+                    source=source,
+                    memory_used=memory_used,
+                )
+            if destination and llm_destination and destination != llm_destination:
+                return CommandDecision(
+                    False,
+                    prediction.intent,
+                    prediction.confidence,
+                    error_code="LLM_DESTINATION_CONFLICT",
+                    message=(
+                        "La destination du texte contredit celle proposée par le LLM."
+                    ),
+                    source=source,
+                    memory_used=memory_used,
+                )
+            destination = destination or llm_destination
+            if not entities.destination and destination and not (
+                has_navigation_marker or contextual_decision
+            ):
+                return CommandDecision(
+                    False,
+                    prediction.intent,
+                    prediction.confidence,
+                    error_code="UNSUPPORTED_CONTEXT_INFERENCE",
+                    message="La destination inférée manque d'indice de navigation sûr.",
+                    source=source,
+                    memory_used=memory_used,
+                )
+        if prediction.intent == "navigate" and not destination:
             return CommandDecision(
                 False,
                 prediction.intent,
                 prediction.confidence,
                 error_code="UNKNOWN_DESTINATION",
                 message="La destination n'est pas un waypoint connu.",
+                source=source,
+                memory_used=memory_used,
             )
 
         return CommandDecision(
             True,
             prediction.intent,
             prediction.confidence,
-            destination=entities.destination,
-            message="Commande acceptée.",
+            destination=destination,
+            message=(
+                "Commande acceptée via le classifieur de secours; le LLM local "
+                "était indisponible."
+                if source == "classifier_fallback"
+                else "Commande acceptée."
+            ),
+            source=source,
+            memory_used=memory_used,
         )
 
     @staticmethod
