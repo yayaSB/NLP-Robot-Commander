@@ -66,6 +66,14 @@ def test_navigation_command_is_accepted_with_destination():
     assert result.destination == "cuisine"
 
 
+def test_short_navigation_command_is_accepted_with_destination():
+    result = processor().process("Va cuisine")
+    assert result.accepted
+    assert result.intent == "navigate"
+    assert result.destination == "cuisine"
+    assert result.source == "deterministic_rules"
+
+
 def test_unknown_navigation_destination_is_rejected():
     result = processor().process("Va dans la chambre")
     assert not result.accepted
@@ -133,7 +141,7 @@ def test_threshold_and_size_configuration_are_validated():
         processor(max_chars=8)
 
 
-def test_llm_can_resolve_explicit_reference_to_previous_command(tmp_path):
+def test_memory_resolves_explicit_reference_without_calling_llm(tmp_path):
     memory = CommandMemory(tmp_path / "memory.sqlite3")
     seed = processor(memory=memory)
     previous = seed.process("Va dans la cuisine")
@@ -146,31 +154,42 @@ def test_llm_can_resolve_explicit_reference_to_previous_command(tmp_path):
 
     assert result.accepted
     assert result.destination == "cuisine"
-    assert result.source == "llm"
+    assert result.source == "memory_rules"
     assert result.memory_used
-    assert llm.history[-1].destination == "cuisine"
+    assert llm.history is None
     memory.close()
 
 
-def test_llm_destination_cannot_override_explicit_destination():
+def test_explicit_navigation_bypasses_conflicting_llm_guess():
     llm = FakeLlm(LlmInterpretation("navigate", 0.95, "cuisine", False))
 
     result = processor(llm=llm).process("Va dans le salon")
+
+    assert result.accepted
+    assert result.destination == "salon"
+    assert result.source == "deterministic_rules"
+    assert llm.history is None
+
+
+def test_llm_destination_cannot_override_non_imperative_destination():
+    llm = FakeLlm(LlmInterpretation("navigate", 0.95, "cuisine", False))
+
+    result = processor(llm=llm).process("Destination salon")
 
     assert not result.accepted
     assert result.error_code == "LLM_DESTINATION_CONFLICT"
 
 
-def test_llm_cannot_claim_memory_that_does_not_exist():
+def test_memory_reference_is_rejected_when_history_is_empty():
     llm = FakeLlm(LlmInterpretation("navigate", 0.95, "cuisine", True))
 
     result = processor(llm=llm).process("Refais la dernière commande")
 
     assert not result.accepted
-    assert result.error_code == "LLM_MEMORY_MISMATCH"
+    assert result.error_code == "MEMORY_EMPTY"
 
 
-def test_llm_memory_destination_must_match_history(tmp_path):
+def test_memory_replays_the_recorded_destination_not_an_llm_guess(tmp_path):
     memory = CommandMemory(tmp_path / "memory.sqlite3")
     seed = processor(memory=memory)
     previous = seed.process("Va dans le salon")
@@ -181,8 +200,21 @@ def test_llm_memory_destination_must_match_history(tmp_path):
         "Refais la dernière commande"
     )
 
+    assert result.accepted
+    assert result.destination == "salon"
+    assert result.source == "memory_rules"
+    assert llm.history is None
+    memory.close()
+
+
+def test_memory_does_not_replay_a_stop_without_explicit_stop_text(tmp_path):
+    memory = CommandMemory(tmp_path / "memory.sqlite3")
+    memory.record("Stop", processor().process("Stop"))
+
+    result = processor(memory=memory).process("Refais la dernière commande")
+
     assert not result.accepted
-    assert result.error_code == "LLM_MEMORY_MISMATCH"
+    assert result.error_code == "MEMORY_COMMAND_NOT_REPLAYABLE"
     memory.close()
 
 

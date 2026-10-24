@@ -119,7 +119,7 @@ Pour la seconde commande, vérifiez dans le JSON :
   "accepted": true,
   "intent": "navigate",
   "destination": "cuisine",
-  "source": "llm",
+  "source": "memory_rules",
   "memory_used": true
 }
 ```
@@ -180,7 +180,7 @@ python -m pytest -q --basetemp .pytest-tmp
 python -m compileall -q scripts src tests
 ```
 
-Le résultat de référence après l’ajout du LLM est `48 passed`.
+Le résultat de référence après l’ajout du LLM est `51 passed`.
 
 ## 8. Comprendre ce qui est appris
 
@@ -188,7 +188,7 @@ Le LLM ne réentraîne pas ses poids en direct. Le projet réalise un apprentiss
 
 - seules les commandes acceptées sont enregistrées ;
 - les 8 commandes les plus récentes sont données au LLM ;
-- une référence explicite telle que `refais`, `dernière commande` ou `retourne là-bas` peut réutiliser ce contexte ;
+- une référence explicite telle que `refais`, `dernière commande` ou `retourne là-bas` réutilise ce contexte directement depuis SQLite ;
 - toute destination finale doit encore appartenir à `waypoints.yaml` ;
 - le LLM ne possède aucun accès direct à ROS 2 ou Nav2.
 

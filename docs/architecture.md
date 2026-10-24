@@ -28,7 +28,7 @@ Le LLM n’est jamais un agent ROS 2 et ne peut appeler aucun outil. Sa sortie a
 
 L’inférence Ollama s’exécute hors du thread ROS principal. Un arrêt explicite est traité immédiatement, incrémente une génération de commandes et rend caduc tout résultat LLM antérieur encore en vol. Une seule analyse non prioritaire peut être active, afin d’éviter une file non bornée.
 
-La mémoire ne constitue pas un apprentissage des poids. Elle conserve un historique borné (200 entrées par défaut) et injecte les 8 dernières commandes acceptées dans le contexte. Une référence à cet historique n’est acceptée que si le texte contient un marqueur explicite tel que `refais`, `dernière commande` ou `retourne là-bas`.
+La mémoire ne constitue pas un apprentissage des poids. Elle conserve un historique borné (200 entrées par défaut) et injecte les 8 dernières commandes acceptées dans le contexte. Une référence explicite telle que `refais`, `dernière commande` ou `retourne là-bas` est résolue directement dans SQLite, sans dépendre d’une supposition du LLM. Une ancienne navigation ou demande de position peut être rejouée ; un arrêt mémorisé exige toujours un nouvel ordre d’arrêt explicite.
 
 ## Interfaces ROS 2
 

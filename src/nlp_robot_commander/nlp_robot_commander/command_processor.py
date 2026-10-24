@@ -218,15 +218,68 @@ class CommandProcessor:
         has_navigation_marker = any(
             marker in normalized for marker in self._NAVIGATION_MARKERS
         )
-        if has_navigation_marker and re.search(
-            r"\b(?:puis|ensuite|apres cela)\b", normalized
-        ):
+        has_sequence_marker = bool(
+            re.search(r"\b(?:puis|ensuite|apres cela)\b", normalized)
+        )
+        has_memory_reference = self._matches_any(
+            normalized, self._MEMORY_REFERENCE_PATTERNS
+        )
+        if (has_navigation_marker or has_memory_reference) and has_sequence_marker:
             return CommandDecision(
                 False,
                 "navigate",
                 1.0,
                 error_code="SEQUENTIAL_COMMAND",
                 message="Les commandes séquentielles ne sont pas autorisées.",
+            )
+
+        if has_memory_reference:
+            history = self.memory.recent(self.llm_history_size) if self.memory else []
+            if not history:
+                return CommandDecision(
+                    False,
+                    "unknown",
+                    0.0,
+                    error_code="MEMORY_EMPTY",
+                    message="Aucune ancienne commande acceptée n'est disponible.",
+                    source="memory_rules",
+                    memory_used=True,
+                )
+            if re.search(r"\b(?:retourne|reviens) la-bas\b", normalized):
+                record = next(
+                    (item for item in reversed(history) if item.intent == "navigate"),
+                    None,
+                )
+            else:
+                record = history[-1]
+            if record is None or record.intent == "stop":
+                return CommandDecision(
+                    False,
+                    "unknown",
+                    0.0,
+                    error_code="MEMORY_COMMAND_NOT_REPLAYABLE",
+                    message="La commande mémorisée ne peut pas être rejouée.",
+                    source="memory_rules",
+                    memory_used=True,
+                )
+            return CommandDecision(
+                True,
+                record.intent,
+                1.0,
+                destination=record.destination,
+                message="Commande précédente retrouvée dans la mémoire locale.",
+                source="memory_rules",
+                memory_used=True,
+            )
+
+        if has_navigation_marker and len(destinations) == 1:
+            return CommandDecision(
+                True,
+                "navigate",
+                1.0,
+                destination=destinations[0],
+                message="Navigation explicite acceptée par les règles déterministes.",
+                source="deterministic_rules",
             )
 
         source = "classifier"
@@ -294,9 +347,6 @@ class CommandProcessor:
                 source=source,
                 memory_used=memory_used,
             )
-        has_memory_reference = self._matches_any(
-            normalized, self._MEMORY_REFERENCE_PATTERNS
-        )
         if memory_used and (
             not has_memory_reference
             or not any(

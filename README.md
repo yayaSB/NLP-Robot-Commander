@@ -125,7 +125,7 @@ Va dans la cuisine
 Refais la dernière commande
 ```
 
-Le deuxième résultat doit contenir `"source": "llm"`, `"memory_used": true` et `"destination": "cuisine"`. Pour repartir sans historique, ajoutez `--clear-memory` au lancement. La base locale n’est pas versionnée par Git.
+Le deuxième résultat doit contenir `"source": "memory_rules"`, `"memory_used": true` et `"destination": "cuisine"`. Les références explicites à l’historique sont résolues directement dans SQLite afin de rester fiables même avec un petit LLM. Pour repartir sans historique, ajoutez `--clear-memory` au lancement. La base locale n’est pas versionnée par Git.
 
 ## Installation ROS 2 Humble
 
