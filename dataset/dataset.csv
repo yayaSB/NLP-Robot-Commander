@@ -161,3 +161,33 @@ Quelle localisation fournit la transformation TF,report,validation
 Montre la pose réelle de la base mobile,report,validation
 J'ai besoin des coordonnées présentes du robot,report,validation
 Retourne la position observée dans map,report,validation
+Avance,navigate,train
+Va tout droit,navigate,train
+Continue tout droit,navigate,train
+Fais avancer le robot,navigate,train
+Avance vers le salon,navigate,train
+Avance vers la cuisine,navigate,train
+Arrête,stop,train
+Stoppe le robot,stop,train
+Avance un peu,navigate,train
+Continue d'avancer,navigate,train
+Poursuis tout droit,navigate,train
+Avance devant toi,navigate,train
+Fais quelques pas en avant,navigate,train
+Continue ton chemin,navigate,train
+L'opérateur demande l'arrêt,stop,train
+L'opérateur demande un arrêt,stop,train
+Arrêt immédiat demandé,stop,train
+L'arrêt est demandé par l'opérateur,stop,train
+Avance légèrement,navigate,train
+Continue à avancer,navigate,train
+Poursuis ton déplacement,navigate,train
+Continue d'avancer doucement,navigate,train
+Fais avancer le robot de quelques pas,navigate,train
+Déplace-toi vers l'avant,navigate,train
+Progresse tout droit,navigate,train
+Fais un pas en avant,navigate,train
+Où se trouve actuellement le mobile,report,train
+Peux-tu indiquer où se trouve le robot,report,train
+Je veux connaître la position du mobile,report,train
+Indique-moi où est le robot sans le déplacer,report,train

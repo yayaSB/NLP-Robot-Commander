@@ -1,0 +1,46 @@
+id,text,expected,predicted,confidence,correct
+T001,Merci d'aller dans la cuisine,navigate,navigate,0.9885,True
+T002,Cap sur le salon,navigate,navigate,0.9891,True
+T003,Le robot doit gagner le bureau,navigate,navigate,0.9884,True
+T004,Ramène-toi au chargeur,navigate,navigate,0.9824,True
+T005,Positionne-toi au coin cuisine,navigate,navigate,0.9883,True
+T006,Je t'ordonne de rejoindre le séjour,navigate,navigate,0.9728,True
+T007,Va maintenant dans la salle de travail,navigate,navigate,0.9884,True
+T008,Fais demi-tour vers la station de recharge,navigate,navigate,0.9883,True
+T009,La cuisine devient ta prochaine destination,navigate,navigate,0.9877,True
+T010,Peux-tu avancer jusque dans le salon,navigate,navigate,0.9889,True
+T011,Déplace le mobile au bureau,navigate,navigate,0.9866,True
+T012,Reviens tranquillement à la base,navigate,navigate,0.9866,True
+T013,Navigue sans attendre vers la cuisine,navigate,navigate,0.9885,True
+T014,Le séjour est le nouvel objectif,navigate,navigate,0.5549,True
+T015,Envoie le robot vers le dock de recharge,navigate,navigate,0.9874,True
+T016,Stoppe tout de suite,stop,stop,0.9839,True
+T017,Je te demande de ne plus avancer,stop,stop,0.9827,True
+T018,Annulation immédiate du parcours,stop,stop,0.9827,True
+T019,Reste sur place dès maintenant,stop,stop,0.9854,True
+T020,Il faut mettre fin à la navigation,stop,stop,0.982,True
+T021,Robot halte,stop,stop,0.9795,True
+T022,Abandonne le trajet actuel,stop,stop,0.9854,True
+T023,Interruption de la mission en cours,stop,stop,0.979,True
+T024,Freine et garde cette position,stop,stop,0.974,True
+T025,Arrêt demandé par l'opérateur,stop,navigate,0.6937,False
+T026,Coupe immédiatement le mouvement,stop,stop,0.9838,True
+T027,Ne continue plus ton chemin,stop,stop,0.983,True
+T028,Suspends le but Nav2 actuel,stop,stop,0.9754,True
+T029,Immobilisation requise,stop,stop,0.9757,True
+T030,Tu dois t'arrêter ici,stop,stop,0.9837,True
+T031,Où en es-tu sur la carte,report,report,0.9851,True
+T032,Transmets la pose que tu mesures,report,report,0.9829,True
+T033,J'aimerais savoir où se situe le mobile,report,report,0.5267,True
+T034,Affiche x y et ton cap,report,report,0.981,True
+T035,Quel emplacement indique TF,report,report,0.9827,True
+T036,Envoie un rapport de position,report,report,0.9826,True
+T037,Dis-moi où tu te situes maintenant,report,report,0.9826,True
+T038,Quelle est la pose courante de base_link,report,report,0.9841,True
+T039,Localisation actuelle s'il te plaît,report,report,0.8568,True
+T040,Je consulte les coordonnées du robot,report,report,0.9854,True
+T041,Rapporte l'endroit mesuré,report,report,0.9851,True
+T042,À quelle position es-tu arrivé,report,report,0.9718,True
+T043,Donne la pose dans le repère map,report,report,0.985,True
+T044,Peux-tu fournir ta localisation présente,report,report,0.9861,True
+T045,Je veux le relevé de ta position,report,report,0.974,True

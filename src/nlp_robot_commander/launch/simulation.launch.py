@@ -16,6 +16,9 @@ def generate_launch_description() -> LaunchDescription:
     turtlebot_navigation = get_package_share_directory("turtlebot3_navigation2")
     commander = get_package_share_directory("nlp_robot_commander")
     default_map = os.path.join(turtlebot_navigation, "map", "map.yaml")
+    default_params = os.path.join(
+        turtlebot_navigation, "param", "humble", "burger.yaml"
+    )
 
     return LaunchDescription(
         [
@@ -37,6 +40,7 @@ def generate_launch_description() -> LaunchDescription:
                 ),
                 launch_arguments={
                     "map": LaunchConfiguration("map"),
+                    "params_file": default_params,
                     "use_sim_time": LaunchConfiguration("use_sim_time"),
                 }.items(),
             ),

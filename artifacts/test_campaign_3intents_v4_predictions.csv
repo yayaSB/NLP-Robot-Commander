@@ -1,0 +1,46 @@
+id,text,expected_intent,expected_entity,category,predicted_intent,correct
+T001,Merci d'aller dans la cuisine,navigate,cuisine,politesse,navigate,True
+T002,Cap sur le salon,navigate,salon,court,navigate,True
+T003,Le robot doit gagner le bureau,navigate,bureau,indirect,navigate,True
+T004,Ramène-toi au chargeur,navigate,chargeur,familier,navigate,True
+T005,Positionne-toi au coin cuisine,navigate,cuisine,variante,navigate,True
+T006,Je t'ordonne de rejoindre le séjour,navigate,salon,longue,navigate,True
+T007,Va maintenant dans la salle de travail,navigate,bureau,variante,navigate,True
+T008,Fais demi-tour vers la station de recharge,navigate,chargeur,variante,navigate,True
+T009,La cuisine devient ta prochaine destination,navigate,cuisine,indirect,navigate,True
+T010,Peux-tu avancer jusque dans le salon,navigate,salon,question,navigate,True
+T011,Déplace le mobile au bureau,navigate,bureau,variante,navigate,True
+T012,Reviens tranquillement à la base,navigate,chargeur,adverbe,navigate,True
+T013,Navigue sans attendre vers la cuisine,navigate,cuisine,adverbe,navigate,True
+T014,Le séjour est le nouvel objectif,navigate,salon,indirect,navigate,True
+T015,Envoie le robot vers le dock de recharge,navigate,chargeur,variante,navigate,True
+T016,Stoppe tout de suite,stop,,urgence,stop,True
+T017,Je te demande de ne plus avancer,stop,,negation_securisee,stop,True
+T018,Annulation immédiate du parcours,stop,,nominal,stop,True
+T019,Reste sur place dès maintenant,stop,,variante,stop,True
+T020,Il faut mettre fin à la navigation,stop,,longue,stop,True
+T021,Robot halte,stop,,court,stop,True
+T022,Abandonne le trajet actuel,stop,,variante,stop,True
+T023,Interruption de la mission en cours,stop,,nominal,stop,True
+T024,Freine et garde cette position,stop,,composee_securisee,stop,True
+T025,Arrêt demandé par l'opérateur,stop,,indirect,stop,True
+T026,Coupe immédiatement le mouvement,stop,,urgence,stop,True
+T027,Ne continue plus ton chemin,stop,,negation_securisee,stop,True
+T028,Suspends le but Nav2 actuel,stop,,technique,stop,True
+T029,Immobilisation requise,stop,,nominal,stop,True
+T030,Tu dois t'arrêter ici,stop,,longue,stop,True
+T031,Où en es-tu sur la carte,report,,question,report,True
+T032,Transmets la pose que tu mesures,report,,technique,report,True
+T033,J'aimerais savoir où se situe le mobile,report,,longue,navigate,False
+T034,Affiche x y et ton cap,report,,coordonnees,report,True
+T035,Quel emplacement indique TF,report,,technique,report,True
+T036,Envoie un rapport de position,report,,nominal,report,True
+T037,Dis-moi où tu te situes maintenant,report,,question,report,True
+T038,Quelle est la pose courante de base_link,report,,technique,report,True
+T039,Localisation actuelle s'il te plaît,report,,politesse,report,True
+T040,Je consulte les coordonnées du robot,report,,indirect,report,True
+T041,Rapporte l'endroit mesuré,report,,variante,report,True
+T042,À quelle position es-tu arrivé,report,,question,report,True
+T043,Donne la pose dans le repère map,report,,technique,report,True
+T044,Peux-tu fournir ta localisation présente,report,,politesse,report,True
+T045,Je veux le relevé de ta position,report,,longue,report,True

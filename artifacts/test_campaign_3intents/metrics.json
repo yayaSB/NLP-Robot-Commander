@@ -1,9 +1,9 @@
 {
-  "accuracy": 1.0,
+  "accuracy": 0.9777777777777777,
   "sample_count": 45,
   "confidence_threshold": 0.65,
-  "below_threshold_count": 0,
-  "accepted_command_count": 45,
+  "below_threshold_count": 1,
+  "accepted_command_count": 44,
   "classification_report": {
     "navigate": {
       "precision": 1.0,
@@ -12,32 +12,33 @@
       "support": 15.0
     },
     "stop": {
-      "precision": 1.0,
+      "precision": 0.9375,
       "recall": 1.0,
-      "f1-score": 1.0,
+      "f1-score": 0.967741935483871,
       "support": 15.0
     },
     "report": {
       "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
+      "recall": 0.9333333333333333,
+      "f1-score": 0.9655172413793104,
       "support": 15.0
     },
-    "accuracy": 1.0,
+    "accuracy": 0.9777777777777777,
     "macro avg": {
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
+      "precision": 0.9791666666666666,
+      "recall": 0.9777777777777779,
+      "f1-score": 0.9777530589543938,
       "support": 45.0
     },
     "weighted avg": {
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
+      "precision": 0.9791666666666666,
+      "recall": 0.9777777777777777,
+      "f1-score": 0.9777530589543938,
       "support": 45.0
     }
   },
   "failure_counts": {
-    "NONE": 45
+    "NONE": 44,
+    "WRONG_INTENT": 1
   }
 }

@@ -9,8 +9,8 @@
   "batch_size": 8,
   "learning_rate": 2e-05,
   "environment": {
-    "python": "3.13.13",
-    "torch": "2.14.1+cpu"
+    "python": "3.10.12",
+    "torch": "2.14.1+cu130"
   },
   "classification_report": {
     "navigate": {

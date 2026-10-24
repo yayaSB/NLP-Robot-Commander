@@ -1,0 +1,145 @@
+text,intent,split,label
+Rends-toi dans la cuisine,navigate,train,0
+Va au salon,navigate,train,0
+Rejoins le bureau,navigate,train,0
+Retourne à la base,navigate,train,0
+Dirige-toi vers le coin cuisine,navigate,train,0
+Avance jusqu'au séjour,navigate,train,0
+Navigue vers la salle de travail,navigate,train,0
+Reviens à la station de recharge,navigate,train,0
+Mets-toi en route vers la cuisine,navigate,train,0
+Peux-tu aller au salon,navigate,train,0
+Je voudrais que tu rejoignes le bureau,navigate,train,0
+Fais route vers le chargeur,navigate,train,0
+Conduis le robot jusqu'à la cuisine,navigate,train,0
+Déplace-toi vers le salon,navigate,train,0
+Suis la direction du bureau,navigate,train,0
+Retourne au dock de recharge,navigate,train,0
+Va te placer dans la cuisine,navigate,train,0
+Rejoins-moi au salon,navigate,train,0
+Roule jusqu'au bureau,navigate,train,0
+Gagne la station de charge,navigate,train,0
+Direction la cuisine,navigate,train,0
+Pars vers le séjour,navigate,train,0
+Atteins le bureau,navigate,train,0
+Rentre à la base,navigate,train,0
+Arrête-toi immédiatement,stop,train,1
+Stoppe le déplacement,stop,train,1
+Halte au mouvement,stop,train,1
+Immobilise-toi,stop,train,1
+Annule le trajet en cours,stop,train,1
+Interromps la navigation,stop,train,1
+Cesse d'avancer,stop,train,1
+Ne bouge plus,stop,train,1
+N'avance plus,stop,train,1
+Freine maintenant,stop,train,1
+Garde ta position,stop,train,1
+Annulation de la mission,stop,train,1
+Je veux que tu t'arrêtes,stop,train,1
+Mets fin au déplacement,stop,train,1
+Arrêt d'urgence,stop,train,1
+Coupe la navigation actuelle,stop,train,1
+Suspend le trajet,stop,train,1
+Reste exactement ici,stop,train,1
+Il faut interrompre le mouvement,stop,train,1
+Stop robot,stop,train,1
+Abandonne cet objectif,stop,train,1
+Fige ta position,stop,train,1
+Annule la destination,stop,train,1
+Termine le déplacement maintenant,stop,train,1
+Où te trouves-tu,report,train,2
+Quelle est ta position,report,train,2
+Donne-moi tes coordonnées,report,train,2
+Indique ta localisation,report,train,2
+Dans quelle pièce es-tu,report,train,2
+Rapporte ta pose actuelle,report,train,2
+Affiche ton emplacement,report,train,2
+Peux-tu me dire où tu es,report,train,2
+Je souhaite connaître ta position,report,train,2
+Localise-toi,report,train,2
+Fournis ta position dans la carte,report,train,2
+Quel est ton x et ton y,report,train,2
+Montre ta pose,report,train,2
+Où est situé le robot,report,train,2
+Donne ton emplacement présent,report,train,2
+Quelle est ta localisation courante,report,train,2
+Rapporte les coordonnées du robot,report,train,2
+Dis-moi dans quel repère tu te situes,report,train,2
+Je veux connaître ta pose exacte,report,train,2
+Communique ta position actuelle,report,train,2
+À quel endroit es-tu maintenant,report,train,2
+Retourne-moi ta localisation,report,train,2
+Informe-moi de ta pose,report,train,2
+Donne la position mesurée par le robot,report,train,2
+Le but de déplacement est la cuisine,navigate,train,0
+Choisis le salon comme prochain objectif,navigate,train,0
+Fixe le bureau comme cible de navigation,navigate,train,0
+Démarre un parcours en direction de la base,navigate,train,0
+Le coin cuisine sera le point d'arrivée,navigate,train,0
+Programme Nav2 pour atteindre le séjour,navigate,train,0
+Envoie le mobile à la salle de travail,navigate,train,0
+La station de recharge est la cible suivante,navigate,train,0
+Définis la cuisine comme destination,navigate,train,0
+Lance un trajet qui se termine au salon,navigate,train,0
+Ordonne un mouvement vers le bureau,navigate,train,0
+Le robot doit retourner au dock,navigate,train,0
+Conduis la plateforme dans la cuisine,navigate,train,0
+Fais avancer le robot vers le séjour,navigate,train,0
+Sélectionne la salle de travail comme but,navigate,train,0
+Débute la navigation vers le chargeur,navigate,train,0
+Je choisis le coin cuisine comme arrivée,navigate,train,0
+Le prochain trajet mène au salon,navigate,train,0
+Tu dois cesser le mouvement maintenant,stop,train,1
+Je t'ordonne de t'arrêter ici,stop,train,1
+Ne poursuis plus cette route,stop,train,1
+Bloque le déplacement du robot,stop,train,1
+Révoque l'objectif Nav2 en cours,stop,train,1
+Demande l'annulation du but actif,stop,train,1
+La plateforme doit rester sur place,stop,train,1
+Déclenche la procédure d'arrêt,stop,train,1
+Termine immédiatement le parcours,stop,train,1
+Le mouvement doit être coupé,stop,train,1
+Interrompez toute progression,stop,train,1
+Je veux une immobilisation complète,stop,train,1
+Arrête la base mobile sans délai,stop,train,1
+Le trajet actuel doit être abandonné,stop,train,1
+Ordonne au robot de ne plus continuer,stop,train,1
+Stoppez le but de navigation,stop,train,1
+Reste immobile à cet endroit,stop,train,1
+Mets un terme à la mission de déplacement,stop,train,1
+Quel emplacement est fourni par TF,report,train,2
+Envoie les données de position du robot,report,train,2
+Fournis le relevé de localisation courant,report,train,2
+Quel point de la carte occupes-tu,report,train,2
+Retourne la transformation map vers base_link,report,train,2
+Expose les coordonnées mesurées par TF,report,train,2
+Dans quel secteur le mobile se trouve-t-il,report,train,2
+Produis un compte rendu de pose,report,train,2
+Donne x y et l'angle actuel,report,train,2
+Affiche la transformation de localisation,report,train,2
+Je consulte l'endroit où se trouve la plateforme,report,train,2
+Transmets les valeurs de ta pose courante,report,train,2
+Quelle position lit le système de repères,report,train,2
+Indique le point occupé sur la carte,report,train,2
+Où se situe précisément base_link,report,train,2
+Communique le relevé de coordonnées,report,train,2
+Je demande les informations de localisation,report,train,2
+Rapporte la transformation courante du robot,report,train,2
+Avance,navigate,train,0
+Va tout droit,navigate,train,0
+Continue tout droit,navigate,train,0
+Fais avancer le robot,navigate,train,0
+Avance vers le salon,navigate,train,0
+Avance vers la cuisine,navigate,train,0
+Arrête,stop,train,1
+Stoppe le robot,stop,train,1
+Avance un peu,navigate,train,0
+Continue d'avancer,navigate,train,0
+Poursuis tout droit,navigate,train,0
+Avance devant toi,navigate,train,0
+Fais quelques pas en avant,navigate,train,0
+Continue ton chemin,navigate,train,0
+L'opérateur demande l'arrêt,stop,train,1
+L'opérateur demande un arrêt,stop,train,1
+Arrêt immédiat demandé,stop,train,1
+L'arrêt est demandé par l'opérateur,stop,train,1

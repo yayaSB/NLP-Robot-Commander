@@ -1,0 +1,37 @@
+text,intent,split,label,predicted_intent,confidence
+Pourrais-tu te rendre au coin cuisine,navigate,validation,0,navigate,0.99086237
+Le prochain objectif est le salon,navigate,validation,0,navigate,0.99037874
+Je te demande de rejoindre la salle de travail,navigate,validation,0,navigate,0.9903706
+Retour au chargeur s'il te plaît,navigate,validation,0,navigate,0.9428287
+Programme un trajet vers la cuisine,navigate,validation,0,navigate,0.99156207
+Déplace le robot jusqu'au séjour,navigate,validation,0,navigate,0.9907231
+Peux-tu stopper la navigation,stop,validation,1,stop,0.9497646
+Je demande un arrêt immédiat,stop,validation,1,stop,0.98832977
+Il faut rester sur place,stop,validation,1,stop,0.9874254
+Annule sans délai le but courant,stop,validation,1,stop,0.9889761
+Immobilisation du robot maintenant,stop,validation,1,stop,0.9880575
+Interruption du trajet en cours,stop,validation,1,stop,0.9849535
+Pourrais-tu afficher tes coordonnées actuelles,report,validation,2,report,0.98709327
+Je demande un rapport de localisation,report,validation,2,report,0.98482066
+Où le robot se situe-t-il précisément,report,validation,2,report,0.9854977
+Quelle pose est mesurée dans la carte,report,validation,2,report,0.9865753
+Communique ton emplacement sans te déplacer,report,validation,2,report,0.9827969
+Indique les coordonnées x y et l'orientation,report,validation,2,report,0.98452765
+La destination souhaitée est le bureau,navigate,validation,0,navigate,0.98878086
+Utilise Nav2 pour retourner à la station de charge,navigate,validation,0,navigate,0.99005604
+Je désigne la cuisine comme prochain but,navigate,validation,0,navigate,0.9906193
+Le parcours demandé doit finir au séjour,navigate,validation,0,navigate,0.98260015
+Fais rejoindre le bureau par le robot,navigate,validation,0,navigate,0.9906487
+Crée un objectif de pose sur la base,navigate,validation,0,navigate,0.56671524
+Je souhaite interrompre toute avance,stop,validation,1,stop,0.9888314
+Le robot doit s'arrêter à cet instant,stop,validation,1,stop,0.9844083
+Annulation requise pour le but actuel,stop,validation,1,stop,0.9507153
+Ne continue pas ce parcours,stop,validation,1,stop,0.98791236
+Il faut couper le déplacement tout de suite,stop,validation,1,stop,0.98361075
+Maintiens la plateforme immobile,stop,validation,1,stop,0.70255953
+Quel emplacement est actuellement mesuré,report,validation,2,report,0.9769051
+Envoie-moi un rapport avec x y et yaw,report,validation,2,report,0.98187953
+Quelle localisation fournit la transformation TF,report,validation,2,report,0.9863172
+Montre la pose réelle de la base mobile,report,validation,2,report,0.97400475
+J'ai besoin des coordonnées présentes du robot,report,validation,2,report,0.9855424
+Retourne la position observée dans map,report,validation,2,report,0.98556966
