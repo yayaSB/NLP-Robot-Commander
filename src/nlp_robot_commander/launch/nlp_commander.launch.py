@@ -16,6 +16,7 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument("model_path", default_value=""),
             DeclareLaunchArgument("llm_enabled", default_value="false"),
             DeclareLaunchArgument("llm_model", default_value="llama3.2:1b"),
+            DeclareLaunchArgument("llm_timeout_sec", default_value="60.0"),
             Node(
                 package="nlp_robot_commander",
                 executable="nlp_commander",
@@ -30,6 +31,9 @@ def generate_launch_description() -> LaunchDescription:
                             LaunchConfiguration("llm_enabled"), value_type=bool
                         ),
                         "llm_model": LaunchConfiguration("llm_model"),
+                        "llm_timeout_sec": ParameterValue(
+                            LaunchConfiguration("llm_timeout_sec"), value_type=float
+                        ),
                         "use_sim_time": ParameterValue(
                             LaunchConfiguration("use_sim_time"), value_type=bool
                         ),

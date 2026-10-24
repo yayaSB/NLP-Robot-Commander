@@ -2,9 +2,40 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "NLP: run all tests",
+      "label": "WSL: check full environment",
+      "type": "shell",
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/wsl_check.sh"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "WSL: setup full stack",
+      "type": "shell",
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/wsl_setup.sh"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "WSL: build package and test",
+      "type": "shell",
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/wsl_build.sh"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "WSL: run all tests",
       "type": "process",
-      "command": "${command:python.interpreterPath}",
+      "command": "${workspaceFolder}/.venv/bin/python",
       "args": [
         "-m",
         "pytest",
@@ -20,6 +51,37 @@
         "isDefault": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "WSL: run NLP demo",
+      "type": "shell",
+      "command": "bash",
+      "args": ["${workspaceFolder}/scripts/wsl_run_demo.sh"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "WSL: run simulation",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "${workspaceFolder}/scripts/wsl_run_simulation.sh",
+        "${input:mapPath}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "mapPath",
+      "type": "promptString",
+      "description": "Chemin absolu WSL de map.yaml (laisser vide pour la carte TurtleBot3 par défaut)",
+      "default": ""
     }
   ]
 }

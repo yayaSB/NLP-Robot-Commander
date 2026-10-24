@@ -1,13 +1,22 @@
 # Guide utilisateur
 
+L’environnement de référence est WSL2 avec Ubuntu 22.04. Effectuez d’abord le
+bootstrap et le diagnostic décrits dans
+[`HOW_TO_FIRST_RUN_ON_VSCODE.md`](HOW_TO_FIRST_RUN_ON_VSCODE.md) :
+
+```bash
+bash scripts/wsl_setup.sh
+bash scripts/wsl_check.sh
+```
+
 ## Préparer le modèle
 
 Créez un environnement Python, installez `requirements-dev.txt`, exécutez l’audit du dataset puis entraînez le checkpoint. Le chemin résultant doit contenir `config.json`, les fichiers du tokenizer et les poids du modèle.
 
-Testez d’abord sans ROS 2 :
+Testez d’abord le pipeline local dans WSL :
 
 ```bash
-python scripts/demo_pipeline.py --model models/distilbert-robot-commander-3intents
+bash scripts/wsl_run_demo.sh --clear-memory
 ```
 
 Exemples attendus :
@@ -20,32 +29,28 @@ Exemples attendus :
 
 ## Activer la mémoire LLM locale
 
-Installez Ollama sur la même machine que le nœud, puis :
+Le bootstrap installe Ollama dans WSL. Vérifiez-le avec :
 
 ```bash
 ollama pull llama3.2:1b
 ollama serve
 ```
 
-Si l’application Ollama tourne déjà, la seconde commande est inutile. Testez sans ROS 2 :
+Si le service Ollama tourne déjà, la seconde commande est inutile. Lancez :
 
 ```bash
-python scripts/demo_pipeline.py \
-  --model models/distilbert-robot-commander-3intents \
-  --llm --llm-model llama3.2:1b
+bash scripts/wsl_run_demo.sh
 ```
 
 Entrez `Va dans la cuisine`, puis `Refais la dernière commande`. L’historique se trouve par défaut dans `~/.local/share/nlp_robot_commander/command_memory.sqlite3`. `--clear-memory` l’efface au démarrage. Il ne contient que les commandes acceptées et reste limité à 200 lignes.
 
 ## Préparer ROS 2
 
-Sous Ubuntu 22.04 :
+Sous Ubuntu 22.04 dans WSL :
 
 ```bash
-source /opt/ros/humble/setup.bash
-export TURTLEBOT3_MODEL=burger
-colcon build --packages-select nlp_robot_commander --symlink-install
-source install/setup.bash
+bash scripts/wsl_build.sh
+source scripts/wsl_env.sh
 ```
 
 Adaptez `waypoints.yaml` à la carte. Chaque entrée exige `x`, `y`, `yaw` et une liste d’alias sans ambiguïté.
@@ -53,16 +58,18 @@ Adaptez `waypoints.yaml` à la carte. Chaque entrée exige `x`, `y`, `yaw` et un
 ## Démarrer
 
 ```bash
-ros2 launch nlp_robot_commander simulation.launch.py \
-  model_path:="$(realpath models/distilbert-robot-commander-3intents)" \
-  llm_enabled:=true llm_model:=llama3.2:1b \
-  map:=/chemin/vers/map.yaml
+bash scripts/wsl_run_simulation.sh /chemin/vers/map.yaml
 ```
 
-Puis :
+Puis, dans deux terminaux WSL séparés :
 
 ```bash
+source scripts/wsl_env.sh
 ros2 run nlp_robot_commander terminal_client
+```
+
+```bash
+source scripts/wsl_env.sh
 ros2 topic echo /nlp_commander/status
 ```
 

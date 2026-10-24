@@ -2,9 +2,11 @@
 
 ## Avant la séance
 
-- [ ] Ubuntu 22.04, ROS 2 Humble, Nav2, Gazebo et TurtleBot3 installés.
+- [ ] WSL2/Ubuntu 22.04 et WSLg fonctionnels, ou Ubuntu 22.04 natif.
+- [ ] `bash scripts/wsl_check.sh` ne signale aucune erreur.
+- [ ] ROS 2 Humble, Nav2, Gazebo, TurtleBot3 et Ollama installés dans Ubuntu.
 - [ ] Checkpoint local entraîné et chemin absolu connu.
-- [ ] `python -m pytest` réussit.
+- [ ] `bash scripts/wsl_build.sh` réussit avec les 56 tests.
 - [ ] Audit du dataset en état `ok: true`.
 - [ ] Carte chargée et waypoints recalibrés dans RViz2.
 - [ ] Pose initiale du robot définie.

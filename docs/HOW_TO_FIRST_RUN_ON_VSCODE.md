@@ -1,266 +1,407 @@
-# First run dans VS Code
+# Premier lancement complet — WSL2, Ubuntu 22.04 et VS Code
 
-Ce guide part d’un PC Windows et sépare deux objectifs :
+Ce guide place **tout le runtime du projet dans WSL2** : Python, notebook, DistilBERT, Ollama, SQLite, ROS 2 Humble, Nav2, Gazebo et RViz2. Windows conserve uniquement l’interface de VS Code et les fenêtres WSLg.
 
-1. lancer immédiatement le pipeline NLP avec le LLM local et sa mémoire ;
-2. lancer ensuite la simulation complète Gazebo/Nav2 sous Ubuntu 22.04.
+La configuration cible est volontairement stricte :
 
-Le premier objectif fonctionne directement sous Windows. Le second exige ROS 2 Humble et doit être exécuté sous Ubuntu 22.04, idéalement en installation native. WSL2 convient au développement, mais l’affichage et l’accélération de Gazebo doivent être testés avant une démonstration.
+- WSL **version 2** ;
+- Ubuntu **22.04 LTS (Jammy)** ;
+- dépôt cloné dans le système de fichiers Linux, par exemple `~/projects/NLP-Robot-Commander` ;
+- Python 3.10 fourni par Ubuntu 22.04 ;
+- ROS 2 Humble installé par paquets Debian ;
+- Ollama et `llama3.2:1b` installés dans WSL, pas utilisés depuis Windows.
 
-## 1. Installer les prérequis Windows
+> WSLg permet d’ouvrir Gazebo et RViz2, mais la fluidité graphique doit être testée avant la soutenance. Pour une démonstration critique, Ubuntu natif reste la solution la plus robuste.
 
-Installez :
+## 1. Installer ou vérifier WSL2
 
-- [Git](https://git-scm.com/download/win) ;
-- [Visual Studio Code](https://code.visualstudio.com/download) ;
-- Python 3.10 64 bits ;
-- [Ollama](https://ollama.com/download/windows).
+Ouvrez **PowerShell en administrateur**.
 
-Python 3.10 est recommandé parce qu’il correspond à Ubuntu 22.04 et ROS 2 Humble. Pendant l’installation Python, activez l’option d’ajout au `PATH`.
-
-Dans PowerShell, vérifiez :
+Mettez WSL à jour :
 
 ```powershell
-git --version
-code --version
-py -3.10 --version
-ollama --version
+wsl --update
 ```
 
-## 2. Cloner et ouvrir le projet
-
-Dans PowerShell :
+Affichez les distributions disponibles :
 
 ```powershell
-cd $HOME\Documents
+wsl --list --online
+```
+
+Installez Ubuntu 22.04 si cette distribution n’existe pas encore :
+
+```powershell
+wsl --install -d Ubuntu-22.04
+```
+
+Redémarrez Windows si le programme le demande. Au premier lancement d’Ubuntu, créez le nom d’utilisateur et le mot de passe Linux. Le mot de passe ne s’affiche pas pendant la saisie : c’est normal.
+
+Vérifiez ensuite depuis PowerShell :
+
+```powershell
+wsl --list --verbose
+```
+
+La ligne Ubuntu 22.04 doit afficher `VERSION 2`. Si elle affiche `1` :
+
+```powershell
+wsl --set-version Ubuntu-22.04 2
+```
+
+## 2. Vérifier Ubuntu et systemd
+
+Ouvrez **Ubuntu 22.04** puis exécutez :
+
+```bash
+cat /etc/os-release
+uname -r
+ps -p 1 -o comm=
+```
+
+Résultats attendus :
+
+- `VERSION_ID="22.04"` ;
+- le noyau contient `microsoft-standard-WSL2` ;
+- le processus 1 est `systemd`.
+
+Si `systemd` n’est pas actif, ouvrez sa configuration :
+
+```bash
+sudo nano /etc/wsl.conf
+```
+
+Ajoutez :
+
+```ini
+[boot]
+systemd=true
+```
+
+Enregistrez avec `Ctrl+O`, validez avec Entrée et quittez avec `Ctrl+X`. Revenez ensuite dans PowerShell :
+
+```powershell
+wsl --shutdown
+```
+
+Rouvrez Ubuntu et vérifiez de nouveau `ps -p 1 -o comm=`.
+
+## 3. Cloner le dépôt dans Linux
+
+Dans le terminal Ubuntu :
+
+```bash
+mkdir -p ~/projects
+cd ~/projects
 git clone https://github.com/yayaSB/NLP-Robot-Commander.git
 cd NLP-Robot-Commander
+```
+
+N’utilisez pas `/mnt/c/Users/.../NLP` comme dossier de travail principal. Les builds `colcon`, les environnements Python et les nombreux petits fichiers sont plus rapides et plus fiables dans `/home/<utilisateur>`.
+
+Vérifiez le chemin :
+
+```bash
+pwd
+```
+
+Il doit ressembler à :
+
+```text
+/home/votre_utilisateur/projects/NLP-Robot-Commander
+```
+
+## 4. Ouvrir le bon VS Code
+
+Installez sous Windows les extensions **WSL**, **Python** et **Jupyter** de Microsoft. Depuis le terminal Ubuntu, dans le dépôt :
+
+```bash
 code .
 ```
 
-Dans VS Code, acceptez les extensions recommandées. Les deux extensions utiles sont **Python** et **WSL**, toutes deux publiées par Microsoft.
+La barre inférieure gauche de VS Code doit indiquer `WSL: Ubuntu-22.04`. Tous les nouveaux terminaux intégrés doivent afficher un shell Linux, jamais PowerShell.
 
-## 3. Créer l’environnement Python
+Le dépôt fournit déjà :
 
-Ouvrez le terminal intégré avec **Terminal > New Terminal**, puis exécutez :
+- `.vscode/settings.json` pour utiliser `.venv/bin/python` ;
+- `.vscode/tasks.json` pour l’installation, le diagnostic, le build, les tests et la simulation ;
+- `.vscode/launch.json` pour les démonstrations NLP avec le débogueur Python.
 
-```powershell
-py -3.10 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements-dev.txt
-```
+## 5. Installer automatiquement toute la pile
 
-Si PowerShell bloque uniquement le script d’activation, autorisez-le pour ce processus, puis recommencez :
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
-```
-
-Choisissez ensuite l’interpréteur dans VS Code :
-
-1. ouvrez la palette avec `Ctrl+Shift+P` ;
-2. lancez **Python: Select Interpreter** ;
-3. sélectionnez `.venv\Scripts\python.exe`.
-
-## 4. Préparer le LLM local
-
-Ollama doit tourner sur le PC. L’application Windows le démarre généralement elle-même. Vérifiez :
-
-```powershell
-ollama list
-```
-
-Si la connexion locale échoue, gardez un deuxième terminal ouvert avec :
-
-```powershell
-ollama serve
-```
-
-Téléchargez une seule fois le modèle multilingue léger :
-
-```powershell
-ollama pull llama3.2:1b
-ollama list
-```
-
-Le modèle Ollama est conservé sur le PC, pas dans le dépôt GitHub. Le projet appelle seulement `http://127.0.0.1:11434` et n’a besoin d’aucune clé API.
-
-## 5. Premier lancement dans VS Code
-
-La configuration est déjà livrée dans `.vscode/launch.json`.
-
-1. ouvrez **Run and Debug** avec `Ctrl+Shift+D` ;
-2. choisissez **NLP demo: LLM + memory** ;
-3. appuyez sur `F5`.
-
-Vous pouvez aussi utiliser le terminal :
-
-```powershell
-python .\scripts\demo_pipeline.py `
-  --llm `
-  --llm-model llama3.2:1b `
-  --llm-timeout 60 `
-  --memory-db .\artifacts\runtime\command_memory.sqlite3
-```
-
-Entrez ces deux commandes dans cet ordre :
-
-```text
-Va dans la cuisine
-Refais la dernière commande
-```
-
-Pour la seconde commande, vérifiez dans le JSON :
-
-```json
-{
-  "accepted": true,
-  "intent": "navigate",
-  "destination": "cuisine",
-  "source": "memory_rules",
-  "memory_used": true
-}
-```
-
-Tapez `quit` pour fermer. Pour vider l’historique, ajoutez `--clear-memory`. La base SQLite est locale, limitée à 200 commandes acceptées et ignorée par Git.
-
-## 6. Ajouter DistilBERT comme secours
-
-Le poids DistilBERT dépasse la limite standard de GitHub, donc un clone neuf ne contient pas le dossier final du modèle. Deux possibilités existent.
-
-### Copier le modèle déjà entraîné
-
-Copiez le dossier complet dans :
-
-```text
-models/distilbert-robot-commander-3intents
-```
-
-Il doit notamment contenir `config.json`, le tokenizer et `model.safetensors`.
-
-### Réentraîner le modèle
-
-Dans le terminal VS Code activé :
-
-```powershell
-python .\scripts\train_intent_classifier.py `
-  --output-dir .\models\distilbert-robot-commander-3intents `
-  --artifacts-dir .\artifacts\training_3intents `
-  --epochs 12 --batch-size 8 --seed 42
-```
-
-L’entraînement télécharge le modèle de base lors de la première exécution et peut être long sur CPU.
-
-Une fois le dossier présent, sélectionnez dans **Run and Debug** :
-
-```text
-NLP demo: DistilBERT + LLM + memory
-```
-
-Commande équivalente :
-
-```powershell
-python .\scripts\demo_pipeline.py `
-  --model .\models\distilbert-robot-commander-3intents `
-  --llm --llm-model llama3.2:1b `
-  --llm-timeout 60 `
-  --memory-db .\artifacts\runtime\command_memory.sqlite3
-```
-
-Si Ollama est arrêté, le champ `source` devient `classifier_fallback`. Pour refuser toute commande plutôt que d’utiliser ce secours, ajoutez `--no-llm-fallback`.
-
-## 7. Lancer les tests depuis VS Code
-
-Utilisez **Terminal > Run Task > NLP: run all tests**, ou :
-
-```powershell
-python -m pytest -q --basetemp .pytest-tmp
-python -m compileall -q scripts src tests
-```
-
-Le résultat de référence après l’ajout du LLM est `51 passed`.
-
-## 8. Comprendre ce qui est appris
-
-Le LLM ne réentraîne pas ses poids en direct. Le projet réalise un apprentissage contextuel contrôlé :
-
-- seules les commandes acceptées sont enregistrées ;
-- les 8 commandes les plus récentes sont données au LLM ;
-- une référence explicite telle que `refais`, `dernière commande` ou `retourne là-bas` réutilise ce contexte directement depuis SQLite ;
-- toute destination finale doit encore appartenir à `waypoints.yaml` ;
-- le LLM ne possède aucun accès direct à ROS 2 ou Nav2.
-
-Un arrêt explicite contourne l’attente du LLM et annule logiquement toute interprétation plus ancienne encore en cours.
-
-## 9. Simulation complète dans VS Code sous Ubuntu 22.04
-
-Installez ROS 2 Humble, Nav2, TurtleBot3 et Gazebo selon leurs documentations officielles. Clonez ensuite le dépôt dans Ubuntu et ouvrez-le avec VS Code depuis ce système. Sous WSL2, ouvrez le dossier avec **WSL: Open Folder in WSL**.
-
-Dans le terminal Ubuntu de VS Code :
+Dans le terminal WSL ouvert à la racine du dépôt :
 
 ```bash
-source /opt/ros/humble/setup.bash
-cd ~/NLP-Robot-Commander
-python3 -m venv --system-site-packages .venv
+bash scripts/wsl_setup.sh
+```
+
+Avant cette commande, quittez l’application Ollama éventuellement ouverte dans
+la zone de notification Windows. Le serveur doit être lancé par Ubuntu afin
+que le diagnostic confirme un runtime entièrement WSL.
+
+Le script est idempotent et réalise les opérations suivantes :
+
+1. refuse WSL1, une mauvaise version d’Ubuntu ou un dépôt sous `/mnt` ;
+2. installe les outils Ubuntu nécessaires ;
+3. configure le dépôt APT officiel de ROS 2 ;
+4. installe ROS 2 Humble Desktop, Nav2, Gazebo et TurtleBot3 ;
+5. initialise `rosdep` ;
+6. crée `.venv` avec `--system-site-packages` pour rendre `rclpy` accessible ;
+7. installe les dépendances NLP, Jupyter et les tests ;
+8. construit le package ROS 2 avec `colcon` ;
+9. exécute les tests Python ;
+10. installe Ollama dans WSL, démarre son service et télécharge `llama3.2:1b`.
+
+Le script demande le mot de passe Linux pour `sudo`. L’installation ROS, PyTorch et Ollama peut prendre du temps et télécharger plusieurs gigaoctets.
+
+Pour installer ROS/Python sans Ollama :
+
+```bash
+bash scripts/wsl_setup.sh --skip-ollama
+```
+
+## 6. Préparer le checkpoint DistilBERT
+
+Le checkpoint final n’est pas sur GitHub, car ses poids dépassent la limite d’un dépôt Git classique.
+
+### Option A — copier le modèle déjà présent sur Windows
+
+La copie est une migration unique. Les exécutions suivantes restent entièrement dans WSL :
+
+```bash
+cd ~/projects/NLP-Robot-Commander
+mkdir -p models
+cp -a \
+  /mnt/c/Users/DELL/Documents/NLP/models/distilbert-robot-commander-3intents \
+  models/
+```
+
+Vérifiez les fichiers indispensables :
+
+```bash
+test -f models/distilbert-robot-commander-3intents/config.json
+test -f models/distilbert-robot-commander-3intents/model.safetensors
+```
+
+### Option B — réentraîner dans WSL
+
+```bash
 source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements-dev.txt
-rosdep install --from-paths src --ignore-src -r -y
-colcon build --packages-select nlp_robot_commander --symlink-install
-source install/setup.bash
+python scripts/train_intent_classifier.py \
+  --output-dir models/distilbert-robot-commander-3intents \
+  --artifacts-dir artifacts/training_3intents \
+  --epochs 12 \
+  --batch-size 8 \
+  --seed 42
 ```
 
-Installez et démarrez Ollama sur cette même machine Ubuntu, puis :
+Le premier entraînement télécharge le modèle Hugging Face de base. Sur CPU, il peut être long.
+
+## 7. Diagnostiquer l’installation
+
+Exécutez :
 
 ```bash
-ollama pull llama3.2:1b
+bash scripts/wsl_check.sh
+```
+
+Le diagnostic vérifie notamment :
+
+- WSL2 et Ubuntu 22.04 ;
+- stockage du dépôt côté Linux ;
+- ROS 2 Humble et les packages Nav2/TurtleBot3 ;
+- `.venv`, `rclpy`, PyTorch et Transformers ;
+- build `colcon` du projet ;
+- checkpoint DistilBERT ;
+- serveur et modèle Ollama ;
+- affichage WSLg pour Gazebo/RViz2.
+
+Corrigez toutes les lignes `[ERREUR]` avant de continuer. Un avertissement sur DistilBERT ou Ollama signifie que la démonstration complète n’est pas encore prête.
+
+## 8. Lancer les tests et reconstruire
+
+Après une modification du code :
+
+```bash
+bash scripts/wsl_build.sh
+```
+
+Ce script exécute `rosdep`, `colcon`, les tests et la compilation Python. Le résultat de référence actuel est :
+
+```text
+56 tests réussis
+```
+
+Dans VS Code, la commande équivalente est **Terminal > Run Task > WSL: build package and test**.
+
+## 9. Lancer la démonstration NLP + LLM + mémoire
+
+Vérifiez Ollama :
+
+```bash
+ollama list
+curl http://127.0.0.1:11434/api/tags
+```
+
+Si le service ne répond pas :
+
+```bash
 ollama serve
 ```
 
-Dans un nouveau terminal Ubuntu correctement sourcé :
+Gardez ce terminal ouvert, puis lancez dans un autre terminal :
 
 ```bash
-export TURTLEBOT3_MODEL=burger
-source /opt/ros/humble/setup.bash
-source ~/NLP-Robot-Commander/install/setup.bash
-cd ~/NLP-Robot-Commander
-ros2 launch nlp_robot_commander simulation.launch.py \
-  model_path:="$(realpath models/distilbert-robot-commander-3intents)" \
-  llm_enabled:=true \
-  llm_model:=llama3.2:1b \
-  map:=/chemin/absolu/vers/map.yaml
+cd ~/projects/NLP-Robot-Commander
+bash scripts/wsl_run_demo.sh --clear-memory
 ```
 
-Dans un troisième terminal :
+Essayez successivement :
+
+```text
+va cuisine
+refais la dernière commande
+t'es où ?
+va dans le salon
+arrête-toi immédiatement
+```
+
+Points attendus :
+
+- `va cuisine` donne `navigate` vers `cuisine` ;
+- `refais...` donne `source: memory_rules` et `memory_used: true` ;
+- `t'es où ?` donne `report` avec les règles déterministes ;
+- l’arrêt explicite donne `source: safety_rules` ;
+- le LLM ne peut jamais envoyer directement une commande ROS 2.
+
+Tapez `quit` pour quitter.
+
+## 10. Ouvrir le notebook de présentation
+
+Dans VS Code WSL, ouvrez :
+
+```text
+NLP_Robot_Commander_Presentation.ipynb
+```
+
+Cliquez sur **Select Kernel**, puis choisissez :
+
+```text
+.venv/bin/python
+```
+
+Cliquez sur **Run All**. Les résultats principaux sont déjà enregistrés dans le notebook, ce qui permet aussi de le présenter sans refaire l’entraînement.
+
+Pour activer la cellule Ollama, remplacez `RUN_LLM = False` par `RUN_LLM = True`.
+
+## 11. Lancer Gazebo, Nav2 et le nœud NLP
+
+### Terminal 1 — Ollama
+
+Seulement si le service systemd n’est pas actif :
 
 ```bash
-source /opt/ros/humble/setup.bash
-source ~/NLP-Robot-Commander/install/setup.bash
+ollama serve
+```
+
+### Terminal 2 — simulation complète
+
+Avec la carte TurtleBot3 par défaut :
+
+```bash
+cd ~/projects/NLP-Robot-Commander
+bash scripts/wsl_run_simulation.sh
+```
+
+Avec votre propre carte :
+
+```bash
+bash scripts/wsl_run_simulation.sh /chemin/absolu/vers/map.yaml
+```
+
+Le script :
+
+- charge ROS 2, `.venv` et le workspace ;
+- vérifie le checkpoint, WSLg et Ollama ;
+- définit `TURTLEBOT3_MODEL=burger` ;
+- démarre Gazebo, Nav2 et `nlp_commander` ;
+- active Ollama avec un délai initial de 60 secondes.
+
+Dans RViz2, utilisez **2D Pose Estimate** pour définir la pose initiale du robot avant le premier ordre de navigation.
+
+### Terminal 3 — client de commandes
+
+```bash
+cd ~/projects/NLP-Robot-Commander
+source scripts/wsl_env.sh
 ros2 run nlp_robot_commander terminal_client
 ```
 
-Pour afficher les décisions et résultats :
+### Terminal 4 — statuts observables
 
 ```bash
+cd ~/projects/NLP-Robot-Commander
+source scripts/wsl_env.sh
 ros2 topic echo /nlp_commander/status
 ```
 
-Avant la première navigation, placez la pose initiale du robot dans RViz2 et remplacez les coordonnées d’exemple de `src/nlp_robot_commander/config/waypoints.yaml` par des poses libres mesurées sur votre carte.
+Vérifiez également le serveur Nav2 :
 
-## 10. Dépannage rapide
+```bash
+ros2 action info /navigate_to_pose
+```
 
-| Erreur | Correction |
+## 12. Recalibrer les waypoints
+
+Les coordonnées de `src/nlp_robot_commander/config/waypoints.yaml` sont des exemples. Pour chaque pièce :
+
+1. choisissez une pose libre dans RViz2 ;
+2. relevez `x`, `y` et `yaw` dans le frame `map` ;
+3. modifiez le fichier YAML ;
+4. reconstruisez avec `bash scripts/wsl_build.sh` ;
+5. relancez la simulation ;
+6. testez d’abord la pose avec **Nav2 Goal**, puis avec une phrase.
+
+## 13. Commandes VS Code disponibles
+
+Ouvrez **Terminal > Run Task** :
+
+| Tâche | Usage |
 |---|---|
-| `No module named ...` | Vérifiez l’interpréteur `.venv`, puis réinstallez `requirements-dev.txt`. |
-| Ollama refuse la connexion | Démarrez l’application ou `ollama serve`, puis testez `ollama list`. |
-| Modèle Ollama absent | Exécutez `ollama pull llama3.2:1b`. |
-| Premier appel LLM expiré | Le chargement à froid peut être lent ; gardez `--llm-timeout 60` pour le premier lancement. |
-| `Checkpoint introuvable` | Copiez ou entraînez DistilBERT, ou lancez la configuration sans DistilBERT. |
-| `LLM_UNAVAILABLE` | Vérifiez Ollama ; retirez `--no-llm-fallback` si le secours est souhaité. |
-| `UNKNOWN_DESTINATION` | Utilisez un waypoint de `waypoints.yaml` ou ajoutez-y un alias unique. |
-| `action_server_unavailable` | Attendez que Nav2 soit actif et vérifiez `/navigate_to_pose`. |
-| Aucun mouvement dans Gazebo | Initialisez la pose dans RViz2, contrôlez la carte et les waypoints. |
+| `WSL: setup full stack` | installation initiale complète |
+| `WSL: check full environment` | diagnostic reproductible |
+| `WSL: build package and test` | rebuild ROS + 56 tests |
+| `WSL: run all tests` | tests Python uniquement |
+| `WSL: run NLP demo` | démo terminal NLP/LLM/mémoire |
+| `WSL: run simulation` | Gazebo + Nav2 + nœud NLP |
 
-Pour la validation ROS 2 complète et la collecte des preuves, poursuivez avec [`ACTIONS_MANUELLES.md`](ACTIONS_MANUELLES.md).
+Dans **Run and Debug**, les configurations `WSL: NLP demo...` utilisent automatiquement `.venv/bin/python`.
+
+## 14. Dépannage
+
+| Symptôme | Correction |
+|---|---|
+| VS Code affiche PowerShell | Fermez la fenêtre et exécutez `code .` depuis Ubuntu. |
+| Le dépôt est sous `/mnt/c` | Clonez-le dans `~/projects`; ne déplacez pas `.venv`. |
+| `rclpy` est introuvable | Recréez `.venv` avec `--system-site-packages` via `wsl_setup.sh`. |
+| `ollama serve` indique que le port est utilisé | Ollama fonctionne déjà; vérifiez avec `curl .../api/tags`. |
+| Ollama ne démarre pas comme service | Activez systemd ou gardez `ollama serve` dans un terminal. |
+| Checkpoint introuvable | Copiez le dossier depuis Windows ou réentraînez-le dans WSL. |
+| Gazebo/RViz2 ne s’ouvre pas | Exécutez `wsl --update`, `wsl --shutdown`, puis vérifiez `$WAYLAND_DISPLAY`. |
+| Gazebo est très lent | Mettez à jour le pilote graphique Windows; utilisez Ubuntu natif pour la soutenance si nécessaire. |
+| `action_server_unavailable` | Attendez l’activation de Nav2 et vérifiez `/navigate_to_pose`. |
+| Le robot ne bouge pas | Définissez la pose initiale, vérifiez la carte et recalibrez les waypoints. |
+| `position_unavailable` | Vérifiez `ros2 run tf2_ros tf2_echo map base_link`. |
+
+## 15. Mise à jour quotidienne
+
+Dans WSL :
+
+```bash
+cd ~/projects/NLP-Robot-Commander
+git pull
+bash scripts/wsl_build.sh
+bash scripts/wsl_check.sh
+```
+
+Pour préparer la soutenance, poursuivez avec [`checklist_demo.md`](checklist_demo.md) et [`ACTIONS_MANUELLES.md`](ACTIONS_MANUELLES.md).

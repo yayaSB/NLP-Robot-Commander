@@ -1,6 +1,6 @@
 # Actions manuelles restantes
 
-Ce document ne contient que les opérations impossibles à valider depuis la machine Windows actuelle. Exécutez-les dans l’ordre. Ne remplacez une mention « non exécuté » dans les rapports qu’après avoir conservé une preuve observable.
+Ce document contient les validations qui exigent une exécution réelle sous WSL2/Ubuntu 22.04 ou Ubuntu natif. Exécutez-les dans l’ordre. Ne remplacez une mention « non exécuté » dans les rapports qu’après avoir conservé une preuve observable.
 
 ## Ordre de priorité
 
@@ -18,23 +18,17 @@ Ce document ne contient que les opérations impossibles à valider depuis la mac
 
 ## 1. Préparer la plateforme cible — P0
 
-**Pourquoi.** ROS 2 Humble, TurtleBot3, Nav2 et Gazebo ne sont pas disponibles dans l’environnement Windows utilisé pour l’audit.
+**Pourquoi.** L’audit Windows valide le NLP local, mais pas ROS 2 Humble, TurtleBot3, Nav2 et Gazebo. Le dépôt fournit désormais un environnement cible WSL2 reproductible qui doit encore être exécuté et observé.
 
-**Où.** Ubuntu 22.04 natif ou machine dédiée disposant de l’accélération graphique requise. Éviter une VM non testée le jour de la soutenance.
+**Où.** WSL2 avec Ubuntu 22.04 et WSLg, ou Ubuntu 22.04 natif. Tester l’accélération graphique avant la soutenance.
 
 **Procédure.** Installer ROS 2 Humble selon la documentation officielle, puis les dépendances du workspace :
 
 ```bash
-source /opt/ros/humble/setup.bash
-cd /chemin/vers/NLP-Robot-Commander
-sudo rosdep init  # seulement si rosdep n'est pas déjà initialisé
-rosdep update
-rosdep install --from-paths src --ignore-src -r -y
-python3 -m venv --system-site-packages .venv
-source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
-colcon build --packages-select nlp_robot_commander --symlink-install
-source install/setup.bash
+cd ~/projects/NLP-Robot-Commander
+bash scripts/wsl_setup.sh
+bash scripts/wsl_check.sh
+source scripts/wsl_env.sh
 ```
 
 **Résultat attendu.** `colcon` termine sans erreur et le package est visible.
@@ -44,7 +38,7 @@ source install/setup.bash
 ```bash
 ros2 pkg prefix nlp_robot_commander
 ros2 pkg executables nlp_robot_commander
-python -m pytest
+bash scripts/wsl_build.sh
 ```
 
 **Erreurs fréquentes.** Si `rclpy` est introuvable, recréer le venv avec `--system-site-packages` après avoir sourcé ROS 2. Si `rosdep init` indique qu’il est déjà initialisé, ne pas supprimer sa configuration ; poursuivre avec `rosdep update`.

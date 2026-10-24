@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "NLP demo: LLM + memory",
+      "name": "WSL: NLP demo LLM + memory",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/demo_pipeline.py",
@@ -17,10 +17,11 @@
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
+      "python": "${workspaceFolder}/.venv/bin/python",
       "justMyCode": true
     },
     {
-      "name": "NLP demo: DistilBERT + LLM + memory",
+      "name": "WSL: NLP demo DistilBERT + LLM + memory",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/demo_pipeline.py",
@@ -37,6 +38,7 @@
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
+      "python": "${workspaceFolder}/.venv/bin/python",
       "justMyCode": true
     }
   ]

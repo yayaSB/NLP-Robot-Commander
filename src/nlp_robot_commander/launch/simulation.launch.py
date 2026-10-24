@@ -25,6 +25,7 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument("model_path", default_value=""),
             DeclareLaunchArgument("llm_enabled", default_value="false"),
             DeclareLaunchArgument("llm_model", default_value="llama3.2:1b"),
+            DeclareLaunchArgument("llm_timeout_sec", default_value="60.0"),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     os.path.join(turtlebot_gazebo, "launch", "turtlebot3_world.launch.py")
@@ -48,6 +49,7 @@ def generate_launch_description() -> LaunchDescription:
                     "model_path": LaunchConfiguration("model_path"),
                     "llm_enabled": LaunchConfiguration("llm_enabled"),
                     "llm_model": LaunchConfiguration("llm_model"),
+                    "llm_timeout_sec": LaunchConfiguration("llm_timeout_sec"),
                 }.items(),
             ),
         ]

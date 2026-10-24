@@ -57,24 +57,34 @@ artifacts/safety_campaign_transformers/ résultats adversariaux
 docs/                            rapport, guides et protocoles
 ```
 
-## Installation NLP
+## Installation recommandée : WSL2 + Ubuntu 22.04
 
-Python 3.10 est recommandé pour rester aligné avec ROS 2 Humble.
+Le runtime de référence est entièrement Linux : Python 3.10, Ollama, SQLite,
+ROS 2 Humble, Nav2, Gazebo et RViz2 tournent dans WSL2. Le dépôt doit être
+cloné dans `~/projects`, pas sous `/mnt/c`.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements-dev.txt
-```
-
-Audit des données et tests rapides :
+Après avoir installé WSL2 et Ubuntu 22.04, ouvrez Ubuntu :
 
 ```bash
-python scripts/audit_dataset.py --output artifacts/dataset_audit.json
-python -m pytest
-python -m compileall -q scripts src tests
+mkdir -p ~/projects
+cd ~/projects
+git clone https://github.com/yayaSB/NLP-Robot-Commander.git
+cd NLP-Robot-Commander
+code .
+bash scripts/wsl_setup.sh
 ```
+
+Le bootstrap installe la pile ROS/NLP, crée un `.venv` compatible avec
+`rclpy`, construit le workspace, lance les tests, installe Ollama dans WSL et
+télécharge `llama3.2:1b`. Vérification reproductible :
+
+```bash
+bash scripts/wsl_check.sh
+```
+
+Le guide complet, y compris l’installation de WSL et la migration du
+checkpoint, est dans
+[`docs/HOW_TO_FIRST_RUN_ON_VSCODE.md`](docs/HOW_TO_FIRST_RUN_ON_VSCODE.md).
 
 ## Entraînement et évaluation
 
@@ -95,11 +105,10 @@ python scripts/evaluate_safety_commands.py \
 
 Le dossier `models/` n’est pas versionné : le poids DistilBERT dépasse la limite de taille standard de GitHub. Il faut entraîner localement ou distribuer le checkpoint avec un stockage de modèles approprié.
 
-Démo locale sans ROS 2 :
+Démo NLP locale dans WSL :
 
 ```bash
-python scripts/demo_pipeline.py \
-  --model models/distilbert-robot-commander-3intents
+bash scripts/wsl_run_demo.sh --clear-memory
 ```
 
 ## LLM local avec mémoire
@@ -110,12 +119,12 @@ Le backend utilise l’API locale d’[Ollama](https://docs.ollama.com/api/chat)
 ollama pull llama3.2:1b
 ```
 
-Ollama doit être démarré (`ollama serve` si l’application ne l’a pas déjà fait). Lancez ensuite la démo avec DistilBERT en secours :
+Ollama doit être démarré dans WSL (`ollama serve` si le service systemd ne
+fonctionne pas). Le wrapper charge automatiquement DistilBERT lorsqu’il est
+présent :
 
 ```bash
-python scripts/demo_pipeline.py \
-  --model models/distilbert-robot-commander-3intents \
-  --llm --llm-model llama3.2:1b --llm-timeout 60
+bash scripts/wsl_run_demo.sh
 ```
 
 Essayez successivement :
@@ -127,37 +136,28 @@ Refais la dernière commande
 
 Le deuxième résultat doit contenir `"source": "memory_rules"`, `"memory_used": true` et `"destination": "cuisine"`. Les références explicites à l’historique sont résolues directement dans SQLite afin de rester fiables même avec un petit LLM. Pour repartir sans historique, ajoutez `--clear-memory` au lancement. La base locale n’est pas versionnée par Git.
 
-## Installation ROS 2 Humble
+## Simulation ROS 2 Humble sous WSL2
 
-Prérequis : Ubuntu 22.04, ROS 2 Humble, Nav2, TurtleBot3, Gazebo et les paquets Python du projet.
+Après le bootstrap et la copie ou l’entraînement du checkpoint, reconstruisez
+et testez :
 
 ```bash
-source /opt/ros/humble/setup.bash
-export TURTLEBOT3_MODEL=burger
-colcon build --packages-select nlp_robot_commander --symlink-install
-source install/setup.bash
+bash scripts/wsl_build.sh
+bash scripts/wsl_run_simulation.sh /chemin/absolu/vers/map.yaml
 ```
 
-Vérifier puis adapter les coordonnées dans `src/nlp_robot_commander/config/waypoints.yaml`. Démarrer la simulation complète avec un chemin absolu vers le checkpoint :
+Omettez le chemin de carte pour utiliser celle de TurtleBot3 par défaut. Dans
+un second terminal WSL :
 
 ```bash
-ros2 launch nlp_robot_commander simulation.launch.py \
-  model_path:="$(realpath models/distilbert-robot-commander-3intents)" \
-  llm_enabled:=true llm_model:=llama3.2:1b \
-  map:=/chemin/absolu/vers/map.yaml
-```
-
-Dans un second terminal :
-
-```bash
-source /opt/ros/humble/setup.bash
-source install/setup.bash
+source scripts/wsl_env.sh
 ros2 run nlp_robot_commander terminal_client
 ```
 
 Pour observer les événements :
 
 ```bash
+source scripts/wsl_env.sh
 ros2 topic echo /nlp_commander/status
 ```
 
@@ -175,13 +175,13 @@ L’option `publish_zero_velocity_on_stop` est `false` par défaut. Un message n
 ## Documentation
 
 - [`NLP_Robot_Commander_Presentation.ipynb`](NLP_Robot_Commander_Presentation.ipynb) : notebook exécutable de démonstration et de présentation des résultats ;
-- [`docs/HOW_TO_FIRST_RUN_ON_VSCODE.md`](docs/HOW_TO_FIRST_RUN_ON_VSCODE.md) : premier démarrage détaillé dans VS Code, sous Windows puis Ubuntu/ROS 2 ;
+- [`docs/HOW_TO_FIRST_RUN_ON_VSCODE.md`](docs/HOW_TO_FIRST_RUN_ON_VSCODE.md) : installation complète WSL2/Ubuntu 22.04 et lancement dans VS Code ;
 - [`docs/rapport_final.md`](docs/rapport_final.md) : rapport technique et audit complet ;
 - [`docs/guide_utilisateur.md`](docs/guide_utilisateur.md) : installation et utilisation ;
 - [`docs/test_protocol.md`](docs/test_protocol.md) : protocole reproductible ;
 - [`docs/failure_mode_catalogue.md`](docs/failure_mode_catalogue.md) : catalogue des modes d’échec ;
 - [`docs/checklist_demo.md`](docs/checklist_demo.md) : déroulé de soutenance ;
-- [`docs/ACTIONS_MANUELLES.md`](docs/ACTIONS_MANUELLES.md) : validations impossibles sur la machine Windows actuelle.
+- [`docs/ACTIONS_MANUELLES.md`](docs/ACTIONS_MANUELLES.md) : validations Gazebo/Nav2 et preuves qui restent manuelles.
 - [`output/pdf/rapport_final_nlp_robot_commander.pdf`](output/pdf/rapport_final_nlp_robot_commander.pdf) : rapport PDF vérifié page par page ;
 - [`output/presentations/NLP_Robot_Commander_HESTIM_3_intentions.pptx`](output/presentations/NLP_Robot_Commander_HESTIM_3_intentions.pptx) : support de soutenance final.
 

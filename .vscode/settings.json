@@ -1,0 +1,6 @@
+{
+  "files.eol": "\n",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "terminal.integrated.defaultProfile.linux": "bash"
+}
