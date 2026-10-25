@@ -161,6 +161,13 @@ source scripts/wsl_env.sh
 ros2 topic echo /nlp_commander/status
 ```
 
+Le lancement place Gazebo et AMCL à la même pose `(-2.0, -0.5, 0.0)` et publie
+automatiquement `/initialpose` dès qu'AMCL est prêt. Les quatre waypoints inclus
+sont libres et connectés sur la carte TurtleBot3 par défaut. Avec une carte
+personnalisée, désactivez cette initialisation avec `AUTO_INITIAL_POSE=false` ou
+définissez `INITIAL_X`, `INITIAL_Y` et `INITIAL_YAW`, puis recalibrez les
+waypoints.
+
 ## Sémantique de l’arrêt
 
 Les événements distinguent volontairement quatre étapes :
@@ -187,7 +194,7 @@ L’option `publish_zero_velocity_on_stop` est `false` par défaut. Un message n
 
 ## Limites
 
-- Les waypoints fournis sont des exemples et doivent être recalibrés sur la carte utilisée.
+- Les waypoints fournis sont calibrés pour la carte TurtleBot3 par défaut et doivent être recalibrés pour toute autre carte.
 - Aucun résultat Gazebo/Nav2 n’est inventé : cette validation reste manuelle sur Ubuntu 22.04.
 - Le corpus français reste petit ; le score de 100 % sur 45 phrases ne garantit pas la généralisation à toutes les formulations.
 - La mémoire fournit du contexte au LLM mais ne réalise pas de réentraînement en ligne. Une sortie LLM reste non déterministe et est toujours filtrée avant routage.

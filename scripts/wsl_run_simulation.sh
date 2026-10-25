@@ -55,6 +55,10 @@ LAUNCH_ARGS=(
   'llm_enabled:=true'
   "llm_model:=$OLLAMA_MODEL"
   'llm_timeout_sec:=60.0'
+  "auto_initial_pose:=${AUTO_INITIAL_POSE:-true}"
+  "initial_x:=${INITIAL_X:--2.0}"
+  "initial_y:=${INITIAL_Y:--0.5}"
+  "initial_yaw:=${INITIAL_YAW:-0.0}"
 )
 if [[ -n "$MAP_PATH" ]]; then
   LAUNCH_ARGS+=("map:=$(realpath "$MAP_PATH")")

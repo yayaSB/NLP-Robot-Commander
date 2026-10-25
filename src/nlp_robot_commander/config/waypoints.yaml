@@ -1,24 +1,24 @@
-# Coordonnées d'exemple dans le repère `map`.
-# Elles doivent être recalibrées sur la carte réellement utilisée dans Gazebo.
+# Poses libres et connectées de la carte TurtleBot3 fournie par défaut.
+# Recalibrez-les si vous passez une autre carte à wsl_run_simulation.sh.
 waypoints:
   cuisine:
-    x: 1.25
-    y: 2.10
-    yaw: 1.57
+    x: 0.55
+    y: 1.75
+    yaw: 0.0
     aliases: [cuisine, coin cuisine]
   salon:
-    x: -1.40
-    y: 0.80
+    x: -2.0
+    y: 0.05
     yaw: 0.0
     aliases: [salon, séjour, sejour]
   bureau:
-    x: 2.30
-    y: -1.15
+    x: 1.75
+    y: -0.55
     yaw: 3.14
     aliases: [bureau, salle de travail]
   chargeur:
-    x: 0.0
-    y: 0.0
+    x: -0.55
+    y: -1.80
     yaw: 0.0
     aliases: [chargeur, base, station de recharge, station de charge, dock, dock de recharge]
 

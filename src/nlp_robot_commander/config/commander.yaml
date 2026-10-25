@@ -20,6 +20,7 @@ nlp_commander:
     status_topic: /nlp_commander/status
     navigate_action: /navigate_to_pose
     nav_server_timeout_sec: 3.0
+    navigation_feedback_period_sec: 1.0
     cancel_timeout_sec: 3.0
     tf_timeout_sec: 0.5
     max_tf_age_sec: 1.0

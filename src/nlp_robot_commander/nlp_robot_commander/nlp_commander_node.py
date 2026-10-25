@@ -59,6 +59,7 @@ class NlpCommanderNode(Node):
         self.navigation = NavigationStateMachine()
         self.goal_handle = None
         self.cancel_deadline_ns: int | None = None
+        self._last_navigation_feedback_ns = 0
         self._command_epoch = 0
         self._nlp_executor = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="nlp-llm"
@@ -116,6 +117,7 @@ class NlpCommanderNode(Node):
         self.declare_parameter("status_topic", "/nlp_commander/status")
         self.declare_parameter("navigate_action", "/navigate_to_pose")
         self.declare_parameter("nav_server_timeout_sec", 3.0)
+        self.declare_parameter("navigation_feedback_period_sec", 1.0)
         self.declare_parameter("cancel_timeout_sec", 3.0)
         self.declare_parameter("tf_timeout_sec", 0.5)
         self.declare_parameter("max_tf_age_sec", 1.0)
@@ -127,6 +129,7 @@ class NlpCommanderNode(Node):
     def _validate_parameters(self) -> None:
         for name in (
             "nav_server_timeout_sec",
+            "navigation_feedback_period_sec",
             "cancel_timeout_sec",
             "tf_timeout_sec",
             "max_tf_age_sec",
@@ -307,9 +310,32 @@ class NlpCommanderNode(Node):
             self._publish_status("navigation_rejected", reason="action_server_unavailable")
             return
 
+        map_frame = str(self.get_parameter("map_frame").value)
+        base_frame = str(self.get_parameter("base_frame").value)
+        tf_timeout = Duration(
+            seconds=float(self.get_parameter("tf_timeout_sec").value)
+        )
+        try:
+            self.tf_buffer.lookup_transform(
+                map_frame, base_frame, Time(), timeout=tf_timeout
+            )
+        except TransformException as exc:
+            self._publish_status(
+                "navigation_rejected",
+                reason="localization_unavailable",
+                map_frame=map_frame,
+                base_frame=base_frame,
+                error=str(exc),
+                hint=(
+                    "Attendez la publication automatique de /initialpose ou utilisez "
+                    "2D Pose Estimate dans RViz2."
+                ),
+            )
+            return
+
         waypoint = self.extractor.waypoint(destination)
         pose = PoseStamped()
-        pose.header.frame_id = self.get_parameter("map_frame").value
+        pose.header.frame_id = map_frame
         pose.header.stamp = self.get_clock().now().to_msg()
         pose.pose.position.x = float(waypoint["x"])
         pose.pose.position.y = float(waypoint["y"])
@@ -321,7 +347,9 @@ class NlpCommanderNode(Node):
         goal.pose = pose
         self.navigation.request_goal(destination)
         try:
-            future = self.action_client.send_goal_async(goal)
+            future = self.action_client.send_goal_async(
+                goal, feedback_callback=self._navigation_feedback_callback
+            )
         except Exception as exc:
             self.navigation.reset()
             self._publish_status(
@@ -362,6 +390,26 @@ class NlpCommanderNode(Node):
         )
         if cancel_immediately:
             self._send_cancel_request()
+
+    def _navigation_feedback_callback(self, feedback_message) -> None:
+        now_ns = self.get_clock().now().nanoseconds
+        period_ns = int(
+            float(self.get_parameter("navigation_feedback_period_sec").value) * 1e9
+        )
+        if now_ns - self._last_navigation_feedback_ns < period_ns:
+            return
+        self._last_navigation_feedback_ns = now_ns
+        feedback = feedback_message.feedback
+        navigation_time = feedback.navigation_time
+        self._publish_status(
+            "navigation_feedback",
+            destination=self.navigation.destination,
+            distance_remaining=round(float(feedback.distance_remaining), 3),
+            navigation_time_sec=round(
+                float(navigation_time.sec) + float(navigation_time.nanosec) / 1e9,
+                2,
+            ),
+        )
 
     def stop(self) -> None:
         self._publish_status("stop_received", phase=self.navigation.phase.value)

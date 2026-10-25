@@ -36,8 +36,9 @@ def test_unknown_and_multiple_destinations_are_not_single_targets():
 
 def test_waypoint_coordinates_are_numeric():
     waypoint = extractor().waypoint("cuisine")
-    assert waypoint["x"] == pytest.approx(1.25)
-    assert waypoint["yaw"] == pytest.approx(1.57)
+    assert waypoint["x"] == pytest.approx(0.55)
+    assert waypoint["y"] == pytest.approx(1.75)
+    assert waypoint["yaw"] == pytest.approx(0.0)
 
 
 def test_ambiguous_alias_is_rejected():

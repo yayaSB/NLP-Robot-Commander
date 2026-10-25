@@ -22,6 +22,7 @@ setup(
     entry_points={
         "console_scripts": [
             "nlp_commander = nlp_robot_commander.nlp_commander_node:main",
+            "initial_pose_publisher = nlp_robot_commander.initial_pose_publisher:main",
             "terminal_client = nlp_robot_commander.terminal_client:main",
             "microphone_client = nlp_robot_commander.microphone_client:main",
         ],

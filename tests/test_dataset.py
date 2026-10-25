@@ -22,18 +22,21 @@ def read_csv(path):
         return list(csv.DictReader(stream))
 
 
-def test_training_dataset_is_balanced_and_uses_curated_splits():
+def test_training_dataset_uses_curated_splits_and_balanced_validation():
     rows = read_csv(ROOT / "dataset" / "dataset.csv")
-    assert len(rows) == 162
+    assert len(rows) == 192
     assert Counter(row["intent"] for row in rows) == {
-        "navigate": 54,
-        "stop": 54,
-        "report": 54,
+        "navigate": 74,
+        "stop": 60,
+        "report": 58,
     }
     assert Counter(row["split"] for row in rows) == {
-        "train": 126,
+        "train": 156,
         "validation": 36,
     }
+    assert Counter(
+        row["intent"] for row in rows if row["split"] == "validation"
+    ) == {"navigate": 12, "stop": 12, "report": 12}
     assert {row["intent"] for row in rows} == LABELS
     assert all(row["text"].strip() for row in rows)
 

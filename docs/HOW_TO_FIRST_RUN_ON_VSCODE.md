@@ -325,9 +325,20 @@ Le script :
 - vérifie le checkpoint, WSLg et Ollama ;
 - définit `TURTLEBOT3_MODEL=burger` ;
 - démarre Gazebo, Nav2 et `nlp_commander` ;
+- synchronise le spawn Gazebo et la pose initiale AMCL à `(-2.0, -0.5, 0.0)` ;
 - active Ollama avec un délai initial de 60 secondes.
 
-Dans RViz2, utilisez **2D Pose Estimate** pour définir la pose initiale du robot avant le premier ordre de navigation.
+Attendez le message `Localisation initialisée` dans le terminal. Sur la carte
+TurtleBot3 par défaut, il n'est plus nécessaire de cliquer sur **2D Pose
+Estimate**. Avec une carte ou un spawn personnalisé, utilisez par exemple :
+
+```bash
+INITIAL_X=1.0 INITIAL_Y=-0.5 INITIAL_YAW=1.57 \
+  bash scripts/wsl_run_simulation.sh /chemin/absolu/vers/map.yaml
+```
+
+Vous pouvez aussi lancer avec `AUTO_INITIAL_POSE=false` et définir la pose à la
+main dans RViz2.
 
 ### Terminal 3 — client de commandes
 
@@ -353,7 +364,9 @@ ros2 action info /navigate_to_pose
 
 ## 12. Recalibrer les waypoints
 
-Les coordonnées de `src/nlp_robot_commander/config/waypoints.yaml` sont des exemples. Pour chaque pièce :
+Les coordonnées de `src/nlp_robot_commander/config/waypoints.yaml` sont déjà
+placées dans des zones libres de la carte TurtleBot3 par défaut. Pour une autre
+carte, calibrez chaque pièce :
 
 1. choisissez une pose libre dans RViz2 ;
 2. relevez `x`, `y` et `yaw` dans le frame `map` ;
@@ -390,8 +403,19 @@ Dans **Run and Debug**, les configurations `WSL: NLP demo...` utilisent automati
 | Gazebo/RViz2 ne s’ouvre pas | Exécutez `wsl --update`, `wsl --shutdown`, puis vérifiez `$WAYLAND_DISPLAY`. |
 | Gazebo est très lent | Mettez à jour le pilote graphique Windows; utilisez Ubuntu natif pour la soutenance si nécessaire. |
 | `action_server_unavailable` | Attendez l’activation de Nav2 et vérifiez `/navigate_to_pose`. |
-| Le robot ne bouge pas | Définissez la pose initiale, vérifiez la carte et recalibrez les waypoints. |
+| `localization_unavailable` | Attendez `Localisation initialisée`; sinon vérifiez `/initialpose` et `map -> base_link`. |
+| `navigation_feedback` sans déplacement | Vérifiez `/cmd_vel`, les roues Gazebo et le temps simulé avec les commandes ci-dessous. |
+| `navigation_finished` avec `aborted` | Le but est inaccessible ou dans un obstacle; testez-le avec **Nav2 Goal** puis recalibrez-le. |
 | `position_unavailable` | Vérifiez `ros2 run tf2_ros tf2_echo map base_link`. |
+
+Diagnostic rapide dans un terminal sourcé :
+
+```bash
+ros2 run tf2_ros tf2_echo map base_link
+ros2 action info /navigate_to_pose
+ros2 topic info /cmd_vel -v
+ros2 topic hz /clock
+```
 
 ## 15. Mise à jour quotidienne
 

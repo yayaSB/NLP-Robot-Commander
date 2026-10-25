@@ -53,13 +53,19 @@ bash scripts/wsl_build.sh
 source scripts/wsl_env.sh
 ```
 
-Adaptez `waypoints.yaml` à la carte. Chaque entrée exige `x`, `y`, `yaw` et une liste d’alias sans ambiguïté.
+Les poses de `waypoints.yaml` sont libres sur la carte TurtleBot3 par défaut.
+Adaptez-les si vous utilisez une autre carte. Chaque entrée exige `x`, `y`,
+`yaw` et une liste d’alias sans ambiguïté.
 
 ## Démarrer
 
 ```bash
 bash scripts/wsl_run_simulation.sh /chemin/vers/map.yaml
 ```
+
+Sans argument, le script utilise la carte TurtleBot3 et initialise
+automatiquement AMCL à la pose du spawn Gazebo. Attendez `Localisation
+initialisée` avant la première commande.
 
 Puis, dans deux terminaux WSL séparés :
 
@@ -84,6 +90,7 @@ Chaque message est un objet JSON avec un champ `event`. `command_parsed` indique
 - `model_path absolu requis` : passez un chemin absolu au lancement.
 - `Checkpoint invalide` : réentraînez le modèle ou vérifiez tous ses fichiers.
 - `action_server_unavailable` : activez Nav2 et contrôlez `/navigate_to_pose`.
+- `localization_unavailable` : attendez l'initialisation automatique ou utilisez **2D Pose Estimate** dans RViz2.
 - `position_unavailable` : vérifiez les frames `map` et `base_link` ainsi que la localisation.
 - `LLM_UNAVAILABLE` : démarrez Ollama, vérifiez `ollama list`, ou activez le secours avec `llm_fallback_to_classifier: true`.
 - `source: classifier_fallback` : la commande a été traitée sans LLM, car le secours explicitement configuré a été utilisé.
