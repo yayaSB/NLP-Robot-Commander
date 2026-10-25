@@ -54,7 +54,7 @@ printf '\n[2/7] Dépôt officiel ROS 2\n'
 if ! dpkg-query -W -f='${Status}' ros2-apt-source 2>/dev/null | grep -q 'install ok installed'; then
   ROS_APT_SOURCE_VERSION="$(
     curl -fsSL https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest \
-      | awk -F'"' '/tag_name/ {print $4; exit}'
+      | awk -F'"' '/tag_name/ && !version {version=$4} END {print version}'
   )"
   if [[ -z "$ROS_APT_SOURCE_VERSION" ]]; then
     printf 'Erreur: impossible de déterminer la version de ros2-apt-source.\n' >&2
