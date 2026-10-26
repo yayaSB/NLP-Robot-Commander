@@ -19,6 +19,7 @@ models/*
 !models/.gitkeep
 !models/README.md
 *.sqlite3
+~$*.pptx
 .idea/
 .vscode/*
 !.vscode/extensions.json
