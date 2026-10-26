@@ -143,11 +143,18 @@ et testez :
 
 ```bash
 bash scripts/wsl_build.sh
-bash scripts/wsl_run_simulation.sh /chemin/absolu/vers/map.yaml
+bash scripts/wsl_run_simulation.sh
 ```
 
-Omettez le chemin de carte pour utiliser celle de TurtleBot3 par défaut. Dans
-un second terminal WSL :
+Le lancement par défaut utilise l'appartement fourni avec le projet. Il contient
+un couloir central, un salon, une cuisine, une chambre et un bureau séparés par
+des murs et des portes de 1,20 m. Dans un second terminal WSL :
+
+![Plan de l'appartement](docs/apartment_layout.svg)
+
+Dans Gazebo, le salon est ocre, la cuisine bleue, la chambre violette, le
+bureau vert et le couloir gris. Le carré bleu du couloir représente le
+chargeur et la pose de départ du robot.
 
 ```bash
 source scripts/wsl_env.sh
@@ -161,12 +168,21 @@ source scripts/wsl_env.sh
 ros2 topic echo /nlp_commander/status
 ```
 
-Le lancement place Gazebo et AMCL à la même pose `(-2.0, -0.5, 0.0)` et publie
-automatiquement `/initialpose` dès qu'AMCL est prêt. Les quatre waypoints inclus
-sont libres et connectés sur la carte TurtleBot3 par défaut. Avec une carte
-personnalisée, désactivez cette initialisation avec `AUTO_INITIAL_POSE=false` ou
-définissez `INITIAL_X`, `INITIAL_Y` et `INITIAL_YAW`, puis recalibrez les
-waypoints.
+Le lancement place Gazebo et AMCL à la même pose `(-4.0, 0.0, 0.0)`, sur le
+chargeur du couloir, et publie automatiquement `/initialpose` après réception
+du premier scan lidar. Les waypoints `salon`, `cuisine`, `bureau` et `chargeur`
+sont libres et connectés. Les sols colorés différencient visuellement les
+pièces. Pour régénérer les deux assets depuis une définition unique :
+
+```bash
+python scripts/generate_apartment_assets.py
+```
+
+Une simulation personnalisée doit fournir ensemble sa carte et son monde :
+
+```bash
+bash scripts/wsl_run_simulation.sh /chemin/map.yaml /chemin/monde.world
+```
 
 ## Sémantique de l’arrêt
 
@@ -194,7 +210,7 @@ L’option `publish_zero_velocity_on_stop` est `false` par défaut. Un message n
 
 ## Limites
 
-- Les waypoints fournis sont calibrés pour la carte TurtleBot3 par défaut et doivent être recalibrés pour toute autre carte.
+- Les waypoints fournis sont calibrés pour l'appartement du projet et doivent être recalibrés pour toute autre carte.
 - Aucun résultat Gazebo/Nav2 n’est inventé : cette validation reste manuelle sur Ubuntu 22.04.
 - Le corpus français reste petit ; le score de 100 % sur 45 phrases ne garantit pas la généralisation à toutes les formulations.
 - La mémoire fournit du contexte au LLM mais ne réalise pas de réentraînement en ligne. Une sortie LLM reste non déterministe et est toujours filtrée avant routage.

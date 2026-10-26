@@ -129,7 +129,8 @@ source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 launch nlp_robot_commander simulation.launch.py \
   model_path:="$(realpath models/distilbert-robot-commander-3intents)" \
-  map:=/chemin/absolu/vers/map.yaml
+  map:=/chemin/absolu/vers/map.yaml \
+  world:=/chemin/absolu/vers/monde.world
 ```
 
 Dans un autre terminal :

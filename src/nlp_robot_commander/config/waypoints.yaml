@@ -1,24 +1,24 @@
-# Poses libres et connectées de la carte TurtleBot3 fournie par défaut.
-# Recalibrez-les si vous passez une autre carte à wsl_run_simulation.sh.
+# Poses libres dans l'appartement fourni par défaut.
+# Repère map: origine de la carte à (-5.5, -4.5), couloir central sur y=0.
 waypoints:
   cuisine:
-    x: 0.55
-    y: 1.75
-    yaw: 0.0
+    x: 1.20
+    y: 2.20
+    yaw: 1.57
     aliases: [cuisine, coin cuisine]
   salon:
-    x: -2.0
-    y: 0.05
-    yaw: 0.0
+    x: -1.20
+    y: 2.20
+    yaw: 1.57
     aliases: [salon, séjour, sejour]
   bureau:
-    x: 1.75
-    y: -0.55
-    yaw: 3.14
+    x: 1.40
+    y: -2.10
+    yaw: -1.57
     aliases: [bureau, salle de travail]
   chargeur:
-    x: -0.55
-    y: -1.80
+    x: -4.0
+    y: 0.0
     yaw: 0.0
     aliases: [chargeur, base, station de recharge, station de charge, dock, dock de recharge]
 

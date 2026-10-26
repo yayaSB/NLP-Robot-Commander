@@ -1,9 +1,7 @@
 from pathlib import Path
 
 import pytest
-
 from nlp_robot_commander.entity_extractor import EntityExtractor
-
 
 WAYPOINTS = (
     Path(__file__).parents[1]
@@ -36,9 +34,9 @@ def test_unknown_and_multiple_destinations_are_not_single_targets():
 
 def test_waypoint_coordinates_are_numeric():
     waypoint = extractor().waypoint("cuisine")
-    assert waypoint["x"] == pytest.approx(0.55)
-    assert waypoint["y"] == pytest.approx(1.75)
-    assert waypoint["yaw"] == pytest.approx(0.0)
+    assert waypoint["x"] == pytest.approx(1.20)
+    assert waypoint["y"] == pytest.approx(2.20)
+    assert waypoint["yaw"] == pytest.approx(1.57)
 
 
 def test_ambiguous_alias_is_rejected():

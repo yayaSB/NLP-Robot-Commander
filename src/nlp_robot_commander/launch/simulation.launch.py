@@ -20,13 +20,11 @@ def generate_launch_description() -> LaunchDescription:
     turtlebot_gazebo = get_package_share_directory("turtlebot3_gazebo")
     turtlebot_navigation = get_package_share_directory("turtlebot3_navigation2")
     commander = get_package_share_directory("nlp_robot_commander")
-    default_map = os.path.join(turtlebot_navigation, "map", "map.yaml")
+    default_map = os.path.join(commander, "maps", "apartment.yaml")
     default_params = os.path.join(
         turtlebot_navigation, "param", "humble", "burger.yaml"
     )
-    world_path = os.path.join(
-        turtlebot_gazebo, "worlds", "turtlebot3_world.world"
-    )
+    default_world = os.path.join(commander, "worlds", "apartment.world")
     model_path = os.path.join(
         turtlebot_gazebo, "models", "turtlebot3_burger", "model.sdf"
     )
@@ -35,11 +33,12 @@ def generate_launch_description() -> LaunchDescription:
         [
             SetEnvironmentVariable("TURTLEBOT3_MODEL", "burger"),
             DeclareLaunchArgument("map", default_value=default_map),
+            DeclareLaunchArgument("world", default_value=default_world),
             DeclareLaunchArgument("nav2_params_file", default_value=default_params),
             DeclareLaunchArgument("use_sim_time", default_value="true"),
             DeclareLaunchArgument("auto_initial_pose", default_value="true"),
-            DeclareLaunchArgument("initial_x", default_value="-2.0"),
-            DeclareLaunchArgument("initial_y", default_value="-0.5"),
+            DeclareLaunchArgument("initial_x", default_value="-4.0"),
+            DeclareLaunchArgument("initial_y", default_value="0.0"),
             DeclareLaunchArgument("initial_yaw", default_value="0.0"),
             DeclareLaunchArgument("model_path", default_value=""),
             DeclareLaunchArgument("llm_enabled", default_value="false"),
@@ -49,7 +48,9 @@ def generate_launch_description() -> LaunchDescription:
                 PythonLaunchDescriptionSource(
                     os.path.join(gazebo_ros, "launch", "gzserver.launch.py")
                 ),
-                launch_arguments={"world": world_path}.items(),
+                launch_arguments={
+                    "world": LaunchConfiguration("world")
+                }.items(),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(

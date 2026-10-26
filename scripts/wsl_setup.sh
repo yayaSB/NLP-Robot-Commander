@@ -158,4 +158,4 @@ printf '1. Préparez le checkpoint DistilBERT (voir docs/HOW_TO_FIRST_RUN_ON_VSC
 printf '2. Exécutez: bash scripts/wsl_check.sh\n'
 printf '3. Dans chaque terminal ROS: source scripts/wsl_env.sh\n'
 printf '4. Lancez la démo: bash scripts/wsl_run_demo.sh --clear-memory\n'
-printf '5. Lancez la simulation: bash scripts/wsl_run_simulation.sh [map.yaml]\n'
+printf '5. Lancez la simulation: bash scripts/wsl_run_simulation.sh [map.yaml monde.world]\n'

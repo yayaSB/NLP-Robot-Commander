@@ -5,6 +5,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODEL_DIR="${NLP_MODEL_PATH:-$PROJECT_ROOT/models/distilbert-robot-commander-3intents}"
 OLLAMA_MODEL="${OLLAMA_MODEL:-llama3.2:1b}"
 MAP_PATH="${1:-}"
+WORLD_PATH="${2:-}"
 
 if [[ ! -f /opt/ros/humble/setup.bash ]]; then
   printf 'ROS 2 Humble absent. Exécutez scripts/wsl_setup.sh.\n' >&2
@@ -39,6 +40,16 @@ if [[ -n "$MAP_PATH" && ! -f "$MAP_PATH" ]]; then
   printf 'Carte introuvable: %s\n' "$MAP_PATH" >&2
   exit 1
 fi
+if [[ -n "$WORLD_PATH" && ! -f "$WORLD_PATH" ]]; then
+  printf 'Monde Gazebo introuvable: %s\n' "$WORLD_PATH" >&2
+  exit 1
+fi
+if [[ -n "$MAP_PATH" && -z "$WORLD_PATH" ]] \
+  || [[ -z "$MAP_PATH" && -n "$WORLD_PATH" ]]; then
+  printf 'Une carte et son monde Gazebo doivent être fournis ensemble.\n' >&2
+  printf 'Usage: bash scripts/wsl_run_simulation.sh [map.yaml monde.world]\n' >&2
+  exit 2
+fi
 
 set +u
 # shellcheck disable=SC1091
@@ -56,12 +67,13 @@ LAUNCH_ARGS=(
   "llm_model:=$OLLAMA_MODEL"
   'llm_timeout_sec:=60.0'
   "auto_initial_pose:=${AUTO_INITIAL_POSE:-true}"
-  "initial_x:=${INITIAL_X:--2.0}"
-  "initial_y:=${INITIAL_Y:--0.5}"
+  "initial_x:=${INITIAL_X:--4.0}"
+  "initial_y:=${INITIAL_Y:-0.0}"
   "initial_yaw:=${INITIAL_YAW:-0.0}"
 )
 if [[ -n "$MAP_PATH" ]]; then
   LAUNCH_ARGS+=("map:=$(realpath "$MAP_PATH")")
+  LAUNCH_ARGS+=("world:=$(realpath "$WORLD_PATH")")
 fi
 
 cd "$PROJECT_ROOT"

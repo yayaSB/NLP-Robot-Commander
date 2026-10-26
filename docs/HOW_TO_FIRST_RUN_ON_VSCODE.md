@@ -306,17 +306,19 @@ ollama serve
 
 ### Terminal 2 — simulation complète
 
-Avec la carte TurtleBot3 par défaut :
+Avec l'appartement fourni par le projet :
 
 ```bash
 cd ~/projects/NLP-Robot-Commander
 bash scripts/wsl_run_simulation.sh
 ```
 
-Avec votre propre carte :
+Avec votre propre paire carte/monde :
 
 ```bash
-bash scripts/wsl_run_simulation.sh /chemin/absolu/vers/map.yaml
+bash scripts/wsl_run_simulation.sh \
+  /chemin/absolu/vers/map.yaml \
+  /chemin/absolu/vers/monde.world
 ```
 
 Le script :
@@ -325,16 +327,17 @@ Le script :
 - vérifie le checkpoint, WSLg et Ollama ;
 - définit `TURTLEBOT3_MODEL=burger` ;
 - démarre Gazebo, Nav2 et `nlp_commander` ;
-- synchronise le spawn Gazebo et la pose initiale AMCL à `(-2.0, -0.5, 0.0)` ;
+- charge un appartement avec salon, cuisine, chambre, bureau et couloir ;
+- synchronise le spawn Gazebo et la pose initiale AMCL à `(-4.0, 0.0, 0.0)` ;
 - active Ollama avec un délai initial de 60 secondes.
 
-Attendez le message `Localisation confirmée` dans le terminal. Sur la carte
-TurtleBot3 par défaut, il n'est plus nécessaire de cliquer sur **2D Pose
+Attendez le message `Localisation confirmée` dans le terminal. Dans
+l'appartement par défaut, il n'est plus nécessaire de cliquer sur **2D Pose
 Estimate**. Avec une carte ou un spawn personnalisé, utilisez par exemple :
 
 ```bash
 INITIAL_X=1.0 INITIAL_Y=-0.5 INITIAL_YAW=1.57 \
-  bash scripts/wsl_run_simulation.sh /chemin/absolu/vers/map.yaml
+  bash scripts/wsl_run_simulation.sh /chemin/map.yaml /chemin/monde.world
 ```
 
 Vous pouvez aussi lancer avec `AUTO_INITIAL_POSE=false` et définir la pose à la
@@ -367,7 +370,7 @@ ros2 action info /navigate_to_pose
 ## 12. Recalibrer les waypoints
 
 Les coordonnées de `src/nlp_robot_commander/config/waypoints.yaml` sont déjà
-placées dans des zones libres de la carte TurtleBot3 par défaut. Pour une autre
+placées dans les pièces libres de l'appartement fourni. Pour une autre
 carte, calibrez chaque pièce :
 
 1. choisissez une pose libre dans RViz2 ;

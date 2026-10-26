@@ -53,19 +53,20 @@ bash scripts/wsl_build.sh
 source scripts/wsl_env.sh
 ```
 
-Les poses de `waypoints.yaml` sont libres sur la carte TurtleBot3 par défaut.
+Les poses de `waypoints.yaml` sont libres dans l'appartement fourni par défaut.
 Adaptez-les si vous utilisez une autre carte. Chaque entrée exige `x`, `y`,
 `yaw` et une liste d’alias sans ambiguïté.
 
 ## Démarrer
 
 ```bash
-bash scripts/wsl_run_simulation.sh /chemin/vers/map.yaml
+bash scripts/wsl_run_simulation.sh
 ```
 
-Sans argument, le script utilise la carte TurtleBot3 et initialise
-automatiquement AMCL à la pose du spawn Gazebo. Attendez `Localisation
-confirmée` avant la première commande.
+Sans argument, le script utilise l'appartement du projet : salon, cuisine,
+chambre et bureau autour d'un couloir central. Il initialise automatiquement
+AMCL sur le chargeur à `(-4.0, 0.0)`. Attendez `Localisation confirmée` avant
+la première commande.
 
 Puis, dans deux terminaux WSL séparés :
 
