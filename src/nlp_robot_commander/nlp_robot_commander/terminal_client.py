@@ -9,8 +9,15 @@ class TerminalClient(Node):
     def __init__(self) -> None:
         super().__init__("nlp_terminal_client")
         self.publisher = self.create_publisher(String, "/nlp_command", 10)
+        self.status_subscription = self.create_subscription(
+            String, "/nlp_commander/status", self._on_status, 10
+        )
         self.worker = threading.Thread(target=self._read_commands, daemon=True)
         self.worker.start()
+
+    @staticmethod
+    def _on_status(message: String) -> None:
+        print(f"\n{message.data}", flush=True)
 
     def _read_commands(self) -> None:
         print("Saisissez une commande en français (`quit` pour sortir).")

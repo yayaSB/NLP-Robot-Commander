@@ -16,6 +16,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description() -> LaunchDescription:
+    gazebo_ros = get_package_share_directory("gazebo_ros")
     turtlebot_gazebo = get_package_share_directory("turtlebot3_gazebo")
     turtlebot_navigation = get_package_share_directory("turtlebot3_navigation2")
     commander = get_package_share_directory("nlp_robot_commander")
@@ -23,12 +24,18 @@ def generate_launch_description() -> LaunchDescription:
     default_params = os.path.join(
         turtlebot_navigation, "param", "humble", "burger.yaml"
     )
+    world_path = os.path.join(
+        turtlebot_gazebo, "worlds", "turtlebot3_world.world"
+    )
+    model_path = os.path.join(
+        turtlebot_gazebo, "models", "turtlebot3_burger", "model.sdf"
+    )
 
     return LaunchDescription(
         [
             SetEnvironmentVariable("TURTLEBOT3_MODEL", "burger"),
             DeclareLaunchArgument("map", default_value=default_map),
-            DeclareLaunchArgument("params_file", default_value=default_params),
+            DeclareLaunchArgument("nav2_params_file", default_value=default_params),
             DeclareLaunchArgument("use_sim_time", default_value="true"),
             DeclareLaunchArgument("auto_initial_pose", default_value="true"),
             DeclareLaunchArgument("initial_x", default_value="-2.0"),
@@ -40,13 +47,47 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument("llm_timeout_sec", default_value="60.0"),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    os.path.join(turtlebot_gazebo, "launch", "turtlebot3_world.launch.py")
+                    os.path.join(gazebo_ros, "launch", "gzserver.launch.py")
+                ),
+                launch_arguments={"world": world_path}.items(),
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(gazebo_ros, "launch", "gzclient.launch.py")
+                )
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(
+                        turtlebot_gazebo,
+                        "launch",
+                        "robot_state_publisher.launch.py",
+                    )
                 ),
                 launch_arguments={
-                    "use_sim_time": LaunchConfiguration("use_sim_time"),
-                    "x_pose": LaunchConfiguration("initial_x"),
-                    "y_pose": LaunchConfiguration("initial_y"),
+                    "use_sim_time": LaunchConfiguration("use_sim_time")
                 }.items(),
+            ),
+            Node(
+                package="gazebo_ros",
+                executable="spawn_entity.py",
+                name="spawn_turtlebot3",
+                output="screen",
+                arguments=[
+                    "-entity",
+                    "burger",
+                    "-file",
+                    model_path,
+                    "-x",
+                    LaunchConfiguration("initial_x"),
+                    "-y",
+                    LaunchConfiguration("initial_y"),
+                    "-z",
+                    "0.01",
+                    "-timeout",
+                    "180",
+                    "-unpause",
+                ],
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -54,7 +95,7 @@ def generate_launch_description() -> LaunchDescription:
                 ),
                 launch_arguments={
                     "map": LaunchConfiguration("map"),
-                    "params_file": LaunchConfiguration("params_file"),
+                    "params_file": LaunchConfiguration("nav2_params_file"),
                     "use_sim_time": LaunchConfiguration("use_sim_time"),
                 }.items(),
             ),

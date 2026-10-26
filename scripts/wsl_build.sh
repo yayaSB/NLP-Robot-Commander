@@ -21,7 +21,7 @@ set -u
 
 cd "$PROJECT_ROOT"
 rosdep install --from-paths src --ignore-src -r -y --rosdistro humble
-colcon build --packages-select nlp_robot_commander --symlink-install
+python -m colcon build --packages-select nlp_robot_commander --symlink-install
 set +u
 # shellcheck disable=SC1091
 source "$PROJECT_ROOT/install/setup.bash"

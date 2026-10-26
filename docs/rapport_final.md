@@ -269,7 +269,7 @@ python -m pytest
 source /opt/ros/humble/setup.bash
 cd /chemin/vers/NLP-Robot-Commander
 rosdep install --from-paths src --ignore-src -r -y
-colcon build --packages-select nlp_robot_commander --symlink-install
+python -m colcon build --packages-select nlp_robot_commander --symlink-install
 source install/setup.bash
 ```
 

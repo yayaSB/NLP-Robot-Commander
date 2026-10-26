@@ -99,7 +99,9 @@ done
 
 if [[ -x "$PROJECT_ROOT/.venv/bin/python" ]]; then
   ok 'Environnement Python Linux .venv présent.'
-  if "$PROJECT_ROOT/.venv/bin/python" -c 'import rclpy, torch, transformers, pandas, yaml' >/dev/null 2>&1; then
+  if "$PROJECT_ROOT/.venv/bin/python" -c \
+    'import rclpy, torch, pandas, yaml; from PIL import Image; from transformers import DistilBertForSequenceClassification' \
+    >/dev/null 2>&1; then
     ok 'Imports Python ROS 2 et NLP réussis.'
   else
     fail 'Un import Python ROS 2/NLP échoue dans .venv.'
@@ -126,6 +128,14 @@ if [[ -f "$PROJECT_ROOT/install/setup.bash" ]]; then
     ok 'Workspace colcon construit et package détecté.'
   else
     fail 'Le package construit n’est pas visible par ROS 2.'
+  fi
+  COMMANDER_EXECUTABLE="$PROJECT_ROOT/install/nlp_robot_commander/lib/nlp_robot_commander/nlp_commander"
+  if [[ -x "$COMMANDER_EXECUTABLE" ]] \
+    && head -n 1 "$COMMANDER_EXECUTABLE" \
+      | grep -Fxq "#!$PROJECT_ROOT/.venv/bin/python"; then
+    ok 'Le nœud ROS utilise bien le Python de .venv.'
+  else
+    fail 'Le nœud ROS n’utilise pas .venv. Relancez scripts/wsl_build.sh.'
   fi
 else
   fail 'Workspace non construit. Exécutez scripts/wsl_build.sh.'

@@ -328,7 +328,7 @@ Le script :
 - synchronise le spawn Gazebo et la pose initiale AMCL à `(-2.0, -0.5, 0.0)` ;
 - active Ollama avec un délai initial de 60 secondes.
 
-Attendez le message `Localisation initialisée` dans le terminal. Sur la carte
+Attendez le message `Localisation confirmée` dans le terminal. Sur la carte
 TurtleBot3 par défaut, il n'est plus nécessaire de cliquer sur **2D Pose
 Estimate**. Avec une carte ou un spawn personnalisé, utilisez par exemple :
 
@@ -347,6 +347,8 @@ cd ~/projects/NLP-Robot-Commander
 source scripts/wsl_env.sh
 ros2 run nlp_robot_commander terminal_client
 ```
+
+Le client affiche directement les événements JSON publiés par le Commander.
 
 ### Terminal 4 — statuts observables
 
@@ -403,7 +405,7 @@ Dans **Run and Debug**, les configurations `WSL: NLP demo...` utilisent automati
 | Gazebo/RViz2 ne s’ouvre pas | Exécutez `wsl --update`, `wsl --shutdown`, puis vérifiez `$WAYLAND_DISPLAY`. |
 | Gazebo est très lent | Mettez à jour le pilote graphique Windows; utilisez Ubuntu natif pour la soutenance si nécessaire. |
 | `action_server_unavailable` | Attendez l’activation de Nav2 et vérifiez `/navigate_to_pose`. |
-| `localization_unavailable` | Attendez `Localisation initialisée`; sinon vérifiez `/initialpose` et `map -> base_link`. |
+| `localization_unavailable` | Attendez `Localisation confirmée`; sinon vérifiez `/initialpose` et `map -> base_link`. |
 | `navigation_feedback` sans déplacement | Vérifiez `/cmd_vel`, les roues Gazebo et le temps simulé avec les commandes ci-dessous. |
 | `navigation_finished` avec `aborted` | Le but est inaccessible ou dans un obstacle; testez-le avec **Nav2 Goal** puis recalibrez-le. |
 | `position_unavailable` | Vérifiez `ros2 run tf2_ros tf2_echo map base_link`. |

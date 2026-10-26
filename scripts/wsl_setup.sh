@@ -110,7 +110,7 @@ python -m pip install -r "$PROJECT_ROOT/requirements-dev.txt"
 
 printf '\n[6/7] Build et tests\n'
 cd "$PROJECT_ROOT"
-colcon build --packages-select nlp_robot_commander --symlink-install
+python -m colcon build --packages-select nlp_robot_commander --symlink-install
 set +u
 # shellcheck disable=SC1091
 source "$PROJECT_ROOT/install/setup.bash"

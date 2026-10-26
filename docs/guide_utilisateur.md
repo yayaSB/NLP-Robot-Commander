@@ -65,7 +65,7 @@ bash scripts/wsl_run_simulation.sh /chemin/vers/map.yaml
 
 Sans argument, le script utilise la carte TurtleBot3 et initialise
 automatiquement AMCL à la pose du spawn Gazebo. Attendez `Localisation
-initialisée` avant la première commande.
+confirmée` avant la première commande.
 
 Puis, dans deux terminaux WSL séparés :
 
@@ -73,6 +73,9 @@ Puis, dans deux terminaux WSL séparés :
 source scripts/wsl_env.sh
 ros2 run nlp_robot_commander terminal_client
 ```
+
+Les décisions NLP et les événements Nav2 s'affichent maintenant directement
+dans ce client.
 
 ```bash
 source scripts/wsl_env.sh
