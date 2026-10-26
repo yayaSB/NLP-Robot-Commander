@@ -410,7 +410,7 @@ Dans **Run and Debug**, les configurations `WSL: NLP demo...` utilisent automati
 | `action_server_unavailable` | Attendez l’activation de Nav2 et vérifiez `/navigate_to_pose`. |
 | `localization_unavailable` | Attendez `Localisation confirmée`; sinon vérifiez `/initialpose` et `map -> base_link`. |
 | `navigation_feedback` sans déplacement | Vérifiez `/cmd_vel`, les roues Gazebo et le temps simulé avec les commandes ci-dessous. |
-| `navigation_finished` avec `aborted` | Le but est inaccessible ou dans un obstacle; testez-le avec **Nav2 Goal** puis recalibrez-le. |
+| `navigation_finished` avec `aborted` | Vérifiez qu'une seule simulation tourne, puis utilisez un waypoint centré derrière la porte et hors des meubles. |
 | `position_unavailable` | Vérifiez `ros2 run tf2_ros tf2_echo map base_link`. |
 
 Diagnostic rapide dans un terminal sourcé :

@@ -61,6 +61,13 @@ source "$PROJECT_ROOT/install/setup.bash"
 set -u
 export TURTLEBOT3_MODEL="${TURTLEBOT3_MODEL:-burger}"
 
+if pgrep -fa '[r]os2 launch nlp_robot_commander simulation.launch.py' >/dev/null 2>&1; then
+  printf 'Une simulation NLP Robot Commander est déjà en cours.\n' >&2
+  printf 'Utilisez la fenêtre Gazebo/RViz2 existante au lieu de lancer une deuxième instance.\n' >&2
+  printf 'Pour redémarrer: Ctrl+C dans son terminal, attendez, puis relancez ce script.\n' >&2
+  exit 3
+fi
+
 LAUNCH_ARGS=(
   "model_path:=$(realpath "$MODEL_DIR")"
   'llm_enabled:=true'

@@ -41,15 +41,15 @@
   </g>
 
   <g stroke="#0b57d0" stroke-width="5" fill="#ffffff">
-    <circle cx="392" cy="208" r="13"/>
-    <circle cx="608" cy="208" r="13"/>
-    <circle cx="626" cy="584" r="13"/>
+    <circle cx="275" cy="274" r="13"/>
+    <circle cx="725" cy="274" r="13"/>
+    <circle cx="725" cy="526" r="13"/>
     <circle cx="140" cy="400" r="13" fill="#0b57d0"/>
   </g>
   <g font-family="sans-serif" font-size="19" font-weight="600" fill="#0b57d0">
-    <text x="412" y="200">waypoint salon</text>
-    <text x="628" y="200">waypoint cuisine</text>
-    <text x="646" y="576">waypoint bureau</text>
+    <text x="295" y="266">waypoint salon</text>
+    <text x="745" y="266">waypoint cuisine</text>
+    <text x="745" y="518">waypoint bureau</text>
     <text x="160" y="392">spawn + chargeur</text>
   </g>
 </svg>

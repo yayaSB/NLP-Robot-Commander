@@ -161,6 +161,13 @@ source scripts/wsl_env.sh
 ros2 run nlp_robot_commander terminal_client
 ```
 
+Le client redessine automatiquement l'invite `> ` après les statuts ROS
+asynchrones. Les destinations utilisent des zones d'arrivée sûres centrées juste
+derrière les portes afin d'éviter que le contrôleur ne coupe un angle de mur.
+
+Ne lancez qu'une seule instance de `wsl_run_simulation.sh` : le script refuse un
+second lancement, car deux stacks Nav2 portant les mêmes noms perturbent les buts.
+
 Pour observer les événements :
 
 ```bash

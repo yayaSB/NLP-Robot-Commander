@@ -34,8 +34,8 @@ def test_unknown_and_multiple_destinations_are_not_single_targets():
 
 def test_waypoint_coordinates_are_numeric():
     waypoint = extractor().waypoint("cuisine")
-    assert waypoint["x"] == pytest.approx(1.20)
-    assert waypoint["y"] == pytest.approx(2.20)
+    assert waypoint["x"] == pytest.approx(2.50)
+    assert waypoint["y"] == pytest.approx(1.40)
     assert waypoint["yaw"] == pytest.approx(1.57)
 
 

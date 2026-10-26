@@ -1,4 +1,10 @@
+import sys
 import threading
+
+try:
+    import readline
+except ImportError:  # pragma: no cover - ROS 2 Humble s'exécute sous Linux/WSL.
+    readline = None
 
 import rclpy
 from rclpy.node import Node
@@ -12,20 +18,34 @@ class TerminalClient(Node):
         self.status_subscription = self.create_subscription(
             String, "/nlp_commander/status", self._on_status, 10
         )
+        self.input_active = threading.Event()
         self.worker = threading.Thread(target=self._read_commands, daemon=True)
         self.worker.start()
 
-    @staticmethod
-    def _on_status(message: String) -> None:
-        print(f"\n{message.data}", flush=True)
+    def _on_status(self, message: String) -> None:
+        """Affiche un statut ROS sans masquer l'invite de commande."""
+        prompt_was_active = self.input_active.is_set()
+        if prompt_was_active:
+            sys.stdout.write("\r\033[2K")
+        sys.stdout.write(f"{message.data}\n")
+        sys.stdout.flush()
+        if prompt_was_active:
+            if readline is not None:
+                readline.redisplay()
+            else:
+                sys.stdout.write("> ")
+                sys.stdout.flush()
 
     def _read_commands(self) -> None:
         print("Saisissez une commande en français (`quit` pour sortir).")
         while rclpy.ok():
             try:
+                self.input_active.set()
                 text = input("> ").strip()
             except EOFError:
                 text = "quit"
+            finally:
+                self.input_active.clear()
             if text.casefold() in {"quit", "exit", "q"}:
                 rclpy.shutdown()
                 return

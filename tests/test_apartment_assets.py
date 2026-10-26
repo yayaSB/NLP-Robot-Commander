@@ -12,6 +12,12 @@ MAP_CONFIG = PACKAGE / "maps" / "apartment.yaml"
 WORLD = PACKAGE / "worlds" / "apartment.world"
 WAYPOINTS = PACKAGE / "config" / "waypoints.yaml"
 
+SAFE_ROOM_ARRIVALS = {
+    "cuisine": (2.5, 1.4),
+    "salon": (-2.5, 1.4),
+    "bureau": (2.5, -1.4),
+}
+
 
 def test_apartment_world_contains_rooms_walls_and_furniture():
     root = ET.parse(WORLD).getroot()
@@ -77,3 +83,10 @@ def test_apartment_map_and_waypoints_are_connected_with_robot_clearance():
         target = to_pixel(float(waypoint["x"]), float(waypoint["y"]))
         assert target in safe, f"Le waypoint {name} manque de dégagement."
         assert target in visited, f"Le waypoint {name} est séparé du couloir."
+
+
+def test_room_waypoints_use_safe_door_center_arrivals():
+    waypoint_config = yaml.safe_load(WAYPOINTS.read_text(encoding="utf-8"))
+    for name, expected in SAFE_ROOM_ARRIVALS.items():
+        waypoint = waypoint_config["waypoints"][name]
+        assert (float(waypoint["x"]), float(waypoint["y"])) == expected

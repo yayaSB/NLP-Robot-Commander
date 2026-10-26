@@ -1,19 +1,19 @@
-# Poses libres dans l'appartement fourni par défaut.
+# Zones d'arrivée sûres, centrées juste derrière les portes des pièces.
 # Repère map: origine de la carte à (-5.5, -4.5), couloir central sur y=0.
 waypoints:
   cuisine:
-    x: 1.20
-    y: 2.20
+    x: 2.50
+    y: 1.40
     yaw: 1.57
     aliases: [cuisine, coin cuisine]
   salon:
-    x: -1.20
-    y: 2.20
+    x: -2.50
+    y: 1.40
     yaw: 1.57
     aliases: [salon, séjour, sejour]
   bureau:
-    x: 1.40
-    y: -2.10
+    x: 2.50
+    y: -1.40
     yaw: -1.57
     aliases: [bureau, salle de travail]
   chargeur:
