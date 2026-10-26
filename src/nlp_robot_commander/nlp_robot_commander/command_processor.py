@@ -103,6 +103,9 @@ class CommandProcessor:
         r"\bt'(?:es|est) ou\b",
         r"\btu (?:es|est) ou\b",
         r"\btu te trouves ou\b",
+        r"\bou (?:es|est)(?:-|\s+)tu\b",
+        r"\bou tu (?:es|est)\b",
+        r"\bou suis-je\b",
     )
     _REPORT_PATTERNS = _DIRECT_REPORT_PATTERNS + (
         r"\bou (?:es-tu|se situe|te trouves-tu)\b",

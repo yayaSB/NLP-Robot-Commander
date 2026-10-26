@@ -34,6 +34,8 @@ class RuleBasedIntentClassifier:
         ),
         "report": (
             "ou es-tu",
+            "ou est-tu",
+            "ou est tu",
             "ou te trouves-tu",
             "ou tu es",
             "ou tu te trouves",

@@ -99,7 +99,17 @@ def test_report_command_is_accepted():
 
 @pytest.mark.parametrize(
     "text",
-    ["t ou?", "t'es où ?", "t'est ou?", "tu es où ?", "tu te trouves où ?"],
+    [
+        "t ou?",
+        "t'es où ?",
+        "t'est ou?",
+        "tu es où ?",
+        "tu te trouves où ?",
+        "ou est tu?",
+        "où est-tu ?",
+        "où tu es ?",
+        "où suis-je ?",
+    ],
 )
 def test_familiar_report_variants_bypass_an_uncertain_llm(text):
     llm = FakeLlm(LlmInterpretation("navigate", 0.5, None, False))
