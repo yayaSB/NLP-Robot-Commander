@@ -204,6 +204,7 @@ L’option `publish_zero_velocity_on_stop` est `false` par défaut. Un message n
 
 ## Documentation
 
+- [`output/pptx/NLP_Robot_Commander_Soutenance.pptx`](output/pptx/NLP_Robot_Commander_Soutenance.pptx) : présentation PowerPoint de soutenance avec notes orales ;
 - [`NLP_Robot_Commander_Presentation.ipynb`](NLP_Robot_Commander_Presentation.ipynb) : notebook exécutable de démonstration et de présentation des résultats ;
 - [`docs/HOW_TO_FIRST_RUN_ON_VSCODE.md`](docs/HOW_TO_FIRST_RUN_ON_VSCODE.md) : installation complète WSL2/Ubuntu 22.04 et lancement dans VS Code ;
 - [`docs/rapport_final.md`](docs/rapport_final.md) : rapport technique et audit complet ;

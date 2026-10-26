@@ -8,6 +8,7 @@ __pycache__/
 pytest-cache-files-*/
 .ruff_cache/
 .chart-data-*/
+.codex-pptx/
 tmp/
 .venv/
 venv/
