@@ -4,7 +4,9 @@ transformers>=4.41,<5
 datasets>=2.19,<4
 accelerate>=0.30,<2
 scikit-learn>=1.4,<2
-numpy>=1.26,<3
+# Python 3.10 + NumPy 2: éviter le vieux SciPy fourni par Ubuntu 22.04.
+numpy>=1.26,<2.3
+scipy>=1.15,<1.16
 pandas>=2.2,<3
 matplotlib>=3.8,<4
 seaborn>=0.13,<1

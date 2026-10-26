@@ -62,7 +62,7 @@ else
   warn 'systemd est inactif; le service Ollama devra être lancé manuellement.'
 fi
 
-for executable in git curl python3 pip3 ros2 colcon rosdep; do
+for executable in git curl python3 pip3 colcon rosdep; do
   if has_command "$executable"; then
     ok "$executable est disponible."
   else
@@ -79,6 +79,11 @@ if [[ -f /opt/ros/humble/setup.bash ]]; then
     ok 'ROS 2 Humble est correctement sourcé.'
   else
     fail 'ROS_DISTRO ne vaut pas humble.'
+  fi
+  if has_command ros2; then
+    ok 'ros2 est disponible.'
+  else
+    fail 'ros2 reste absent après le chargement de ROS 2 Humble.'
   fi
 else
   fail '/opt/ros/humble/setup.bash est absent.'
@@ -98,6 +103,15 @@ if [[ -x "$PROJECT_ROOT/.venv/bin/python" ]]; then
     ok 'Imports Python ROS 2 et NLP réussis.'
   else
     fail 'Un import Python ROS 2/NLP échoue dans .venv.'
+  fi
+  if SCIENTIFIC_VERSIONS="$(
+    "$PROJECT_ROOT/.venv/bin/python" -W error -c \
+      'import numpy, scipy; print(f"NumPy {numpy.__version__}, SciPy {scipy.__version__}")' \
+      2>/dev/null
+  )"; then
+    ok "Versions scientifiques compatibles: $SCIENTIFIC_VERSIONS."
+  else
+    fail 'NumPy et SciPy sont incompatibles. Réinstallez requirements-dev.txt.'
   fi
 else
   fail '.venv Linux absent. Relancez scripts/wsl_setup.sh.'
